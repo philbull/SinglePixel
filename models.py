@@ -1,6 +1,6 @@
 
 import numpy as np
-import single_pixel as fg
+from utils import *
 from scipy.interpolate import RectBivariateSpline
 
 #-------------------------------------------------------------------------------
@@ -18,7 +18,7 @@ class DustModel(object):
         self.name = name
         
         # Conversion factor, 1uK_RJ at 353 GHz to uK_CMB
-        nufac = 2.*(353e9)**2. * fg.k / (fg.c**2. * fg.G_nu(353e9, fg.Tcmb))
+        nufac = 2.*(353e9)**2. * k / (c**2. * G_nu(353e9, Tcmb))
         
         # Set amplitude parameters
         self.amp_I = amp_I * nufac
@@ -98,9 +98,9 @@ class DustMBB(DustModel):
         nu_ref = self.nu_ref
         
         # Frequency-dependent scalings.
-        dust_I = (nu / nu_ref)**beta * fg.B_nu(nu, Td) \
-               * fg.G_nu(nu_ref, fg.Tcmb) \
-               / ( fg.B_nu(353.*1e9, 20.) * fg.G_nu(nu, fg.Tcmb) )
+        dust_I = (nu / nu_ref)**beta * B_nu(nu, Td) \
+               * G_nu(nu_ref, Tcmb) \
+               / ( B_nu(353.*1e9, 20.) * G_nu(nu, Tcmb) )
         dust_Q = dust_I
         dust_U = dust_I
         
@@ -218,7 +218,7 @@ class DustHD(DustModel):
         lam = 1.e4 * c / (nu) # in microns
         lam_ref = 1.e4 * c / nu_ref # in microns
         
-        unit_fac = fg.G_nu(nu_ref, fg.Tcmb) / fg.G_nu(nu, fg.Tcmb)
+        unit_fac = G_nu(nu_ref, Tcmb) / G_nu(nu, Tcmb)
         
         # Calculate frequency-dependent scaling factors
         dust_I = unit_fac \
@@ -256,8 +256,8 @@ class SyncModel(object):
         self.nu_ref = 30.*1.e9 # Hz
         
         # Conversion factor, 1uK_RJ at 30 GHz to uK_CMB
-        nufac = 2.*(self.nu_ref)**2. * fg.k \
-              / (fg.c**2. * fg.G_nu(self.nu_ref, fg.Tcmb))
+        nufac = 2.*(self.nu_ref)**2. * k \
+              / (c**2. * G_nu(self.nu_ref, Tcmb))
         
         # Set amplitude parameters
         self.amp_I = amp_I * nufac
@@ -294,7 +294,7 @@ class SyncModel(object):
         Return frequency scaling factor at a given frequency.
         """
         sync_I = (nu / self.nu_ref)**self.sync_beta \
-               * fg.G_nu(self.nu_ref, fg.Tcmb) / fg.G_nu(nu, fg.Tcmb)
+               * G_nu(self.nu_ref, Tcmb) / G_nu(nu, Tcmb)
         sync_Q = sync_I
         sync_U = sync_I
         
@@ -326,8 +326,8 @@ class FreeFreeModel(object):
         self.nu_ref = 30. * 1e9 # Reference frequency
         
         # Conversion factor, 1uK_RJ at 30 GHz to uK_CMB
-        nufac = 2.*(self.nu_ref)**2. * fg.k \
-              / (fg.c**2. * fg.G_nu(self.nu_ref, fg.Tcmb))
+        nufac = 2.*(self.nu_ref)**2. * k \
+              / (c**2. * G_nu(self.nu_ref, Tcmb))
         
         # Set amplitude parameters
         self.amp_I = amp_I * nufac
@@ -364,7 +364,7 @@ class FreeFreeModel(object):
         Return frequency scaling factor at a given frequency.
         """
         ff_I = (nu / self.nu_ref)**self.ff_beta \
-             * fg.G_nu(self.nu_ref, fg.Tcmb) / fg.G_nu(nu, fg.Tcmb)
+             * G_nu(self.nu_ref, Tcmb) / G_nu(nu, Tcmb)
         ff_Q = ff_I
         ff_U = ff_I
         return np.array([ff_I, ff_Q, ff_U])
