@@ -6,6 +6,7 @@ Do MCMC runs to fit FG models to simulated data, over a grid of
 import numpy as np
 import models
 import fitting
+from utils import rj2cmb
 import sys
 from multiprocessing import Pool
 
@@ -36,21 +37,23 @@ fsigma_P = 2. #0.01
 
 # Define input models and their amplitudes/parameters
 #dust_model = models.DustMBB(amp_I=150., amp_Q=10., amp_U=10., dust_beta=1.6, dust_T=20.)
-dust_model = models.DustSimpleMBB(amp_I=150., amp_Q=10., amp_U=10., dust_beta=1.6, dust_T=20.)
-sync_model = models.SyncPow(amp_I=30., amp_Q=10., amp_U=10., sync_beta=-3.2)
-cmb_model = models.CMB(amp_I=50., amp_Q=0.6, amp_U=0.6)
+dust_model = models.DustMBB( amp_I=rj2cmb(353e9, 150.), 
+                             amp_Q=rj2cmb(353e9, 10.), 
+                             amp_U=rj2cmb(353e9, 10.), 
+                             dust_beta=1.6, dust_T=20. )
+sync_model = models.SyncPow( amp_I=30., amp_Q=10., amp_U=10., sync_beta=-3.2 )
+cmb_model = models.CMB( amp_I=50., amp_Q=0.6, amp_U=0.6 )
 
-#name_in = "MBBSync"
-name_in = "SimpleMBBSync"
+name_in = "MBBSync"
+#name_in = "SimpleMBBSync"
 mods_in = [dust_model, sync_model, cmb_model]
 amps_in = np.array([m.amps() for m in mods_in])
 params_in = np.array([m.params() for m in mods_in])
 
 # Define models to use for the fitting
-#name_fit = "MBBSync"
-name_fit = "SimpleMBBSync"
+name_fit = "MBBSync"
+#name_fit = "SimpleMBBSync"
 mods_fit = [dust_model, sync_model, cmb_model]
-
 
 
 def bands_log(nu_min, nu_max, nbands):
