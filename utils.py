@@ -28,3 +28,10 @@ def rj2cmb(nu, T):
     Convert a Rayleigh-Jeans temperature to a CMB temperature.
     """
     return 2. * k * (nu / c)**2. * T / G_nu(nu, Tcmb)
+
+def bands_log(nu_min, nu_max, nbands):
+    """
+    Logarithmic set of bands.
+    """
+    freq_vec = np.arange(nbands)
+    return nu_min * (nu_max/nu_min)**(freq_vec/(nbands-1.)) * 1e9 # in Hz

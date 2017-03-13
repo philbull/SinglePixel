@@ -46,7 +46,8 @@ def lnprob(pvals, data_spec, models_fit, param_spec, Ninv_sqrt):
     
     F_fg, F_cmb, F = F_matrix(pvals, nu, models_fit, param_spec)
     H = F_fg.T * Ninv * F_fg
-
+    
+    # GLS solution for component amplitudes
     x_mat = np.linalg.inv(F.T * beam_mat.T * Ninv * beam_mat * F) \
           * F.T * beam_mat.T * Ninv * D_vec # Equation A3
     
@@ -60,10 +61,62 @@ def lnprob(pvals, data_spec, models_fit, param_spec, Ninv_sqrt):
     N_eff_inv_cmb = F_cmb.T * Ninv_sqrt \
                   * (np.matrix(np.identity(U.shape[0])) - U*U.T) \
                   * Ninv_sqrt * F_cmb
-        
+    
+    # Total log posterior
     lnprob = logpr - chi_square - 0.5*np.log(np.linalg.det(H)) \
                               - 0.5*np.log(np.linalg.det(N_eff_inv_cmb))
-    return lnprob
+    
+    # Return log-posterior and GLS amplitudes
+    return lnprob, np.array(x_mat.T)[0]
+
+
+def lnprob_joint(params, data_spec, models_fit, param_spec):
+    """
+    log-probability (likelihood times prior) for a set of parameter values.
+    """
+    # Retrieve instrument/data model and parameter info
+    nu, D_vec, Ninv, beam_mat = data_spec
+    pnames, initial_vals, parent_model = param_spec
+    Nmod = len(models_fit)
+    Npol = 3
+    
+    # Separate amplitude and spectral model parameters
+    amps = params[:Nmod*Npol]
+    pvals = params[Nmod*Npol:]
+    
+    # Apply prior
+    logpr = ln_prior(pvals, models_fit)
+    if not np.isfinite(logpr):
+        return -np.inf
+    
+    # Create new copies of model objects to work with
+    models = [copy.deepcopy(m) for m in models_fit]
+    
+    # Set new parameter values for the copied model objects, and then get 
+    # scalings as a function of freq./polarisation
+    pstart = 0
+    mdata = np.zeros(nu.size * Npol)
+    for i in range(len(models)):
+        m = models[i]
+        
+        # Set new parameter values in the models
+        n = m.params().size
+        m.set_params( pvals[pstart:pstart+n] )
+        pstart += n # Increment for next model
+        
+        # Calculate scaling with freq. given new parameter values
+        amp = np.outer( amps[3*i:3*(i+1)], np.ones(nu.size) ) # Npol*Nfreq array
+        
+        # Add to model prediction of data vector
+        mdata += (amp * m.scaling(nu)).flatten()
+    
+    # Calculate chi-squared with data (assumed beam = 1)
+    mdata = np.matrix(mdata).T
+    chi_square = (D_vec - mdata).T * Ninv * (D_vec - mdata)
+    
+    # Return log-posterior
+    #return logpr - 0.5 * chi_square
+    return -0.5 * chi_square
 
 
 def F_matrix(pvals, nu, models_fit, param_spec):
@@ -72,9 +125,9 @@ def F_matrix(pvals, nu, models_fit, param_spec):
     """
     pnames, initial_vals, parent_model = param_spec
     
-    # Check that the CMB component is the last component in the model list
-    if models_fit[-1].model != 'cmb':
-        raise ValueError("The last model in the models_fit list should be a "
+    # Check that the CMB component is the first component in the model list
+    if models_fit[0].model != 'cmb':
+        raise ValueError("The first model in the models_fit list should be a "
                          "CMB() object.")
     
     Nband = len(nu) # No. of frequency bands
@@ -90,7 +143,7 @@ def F_matrix(pvals, nu, models_fit, param_spec):
     
     # Set new parameter values for the copied model objects, and then get 
     # scalings as a function of freq./polarisation
-    pstart = 0
+    pstart = 0; k = -1
     for i in range(len(models)):
         m = models[i]
         
@@ -98,6 +151,7 @@ def F_matrix(pvals, nu, models_fit, param_spec):
         n = m.params().size
         m.set_params( pvals[pstart:pstart+n] )
         pstart += n # Increment for next model
+        if m.model != 'cmb': k += 1 # Increment for next non-CMB model
         
         # Calculate scaling with freq. given new parameter values
         scal = m.scaling(nu)
@@ -105,13 +159,12 @@ def F_matrix(pvals, nu, models_fit, param_spec):
         for j in range(Npol):
             # Fill FG or CMB -matrix with scalings, as appropriate
             if m.model != 'cmb':
-                F_fg[j*Nband:(j+1)*Nband, i*Npol + j] = scal[j,:]
+                F_fg[j*Nband:(j+1)*Nband, k*Npol + j] = scal[j,:]
             else:
                 F_cmb[j*Nband:(j+1)*Nband, j] = scal[j,:]
     
     # Stack CMB and FG F-matrices together
     F = np.hstack((F_cmb, F_fg))
-    
     return np.matrix(F_fg), np.matrix(F_cmb), np.matrix(F)
 
 
@@ -128,9 +181,18 @@ def mcmc(data_spec, models_fit, param_spec, nwalkers=50,
     Ninv_sqrt = np.matrix(sqrtm(Ninv))
     
     # Get a list of model parameter names (FIXME: Ignores input pnames for now)
-    pnames = []
+    param_names = []
     for mod in models_fit:
-        pnames += mod.param_names
+        param_names += mod.param_names
+    
+    # Get a list of amplitude names
+    fg_amp_names = []; cmb_amp_names = []
+    for mod in models_fit:
+        if mod.model == 'cmb':
+            cmb_amp_names += ["%s_%s" % (mod.model, pol) for pol in "IQU"]
+        else:
+            fg_amp_names += ["%s_%s" % (mod.model, pol) for pol in "IQU"]
+    pnames = cmb_amp_names + fg_amp_names + param_names
     
     # Define starting points
     ndim = len(initial_vals)
@@ -140,17 +202,73 @@ def mcmc(data_spec, models_fit, param_spec, nwalkers=50,
     sampler = emcee.EnsembleSampler( nwalkers, ndim, lnprob, 
                            args=(data_spec, models_fit, param_spec, Ninv_sqrt) )
     sampler.run_mcmc(pos, burn + steps)
-    samples = sampler.chain[:, burn:, :].reshape((-1, ndim))
+    
+    # Recover samples of spectral parameters and amplitudes
+    param_samples = sampler.chain[:, burn:, :].reshape((-1, ndim))
+    amp_samples = np.swapaxes(np.array(sampler.blobs), 0, 1)
+    amp_samples = amp_samples[:, burn:, :].reshape((-1, amp_samples.shape[2]))
+    samples = np.concatenate((amp_samples.T, param_samples.T))
     
     # Save chains to file
     if sample_file is not None:
         np.savetxt(sample_file, samples, fmt="%.6e", header=" ".join(pnames))
     
     # Summary statistics for fitted parameters
-    params_out = np.median(samples, axis=0)
+    params_out = np.median(param_samples, axis=0)
+    
+    #import pylab as P
+    #P.plot(amp_samples[:,0])
+    #P.show()
+    #exit()
+    
+    print amp_samples.shape
+    print "Mean amps =", np.mean(amp_samples, axis=0)
+    print "std(I) =", np.std(amp_samples[:,0]), np.std(amp_samples[:,0]) / 50.
+    print "Measured BIAS:", ( np.mean(amp_samples[:,0]) - 50. ) / np.std(amp_samples[:,0])
     
     # Return summary statistics and samples
     return params_out, pnames, samples
+
+
+def joint_mcmc(data_spec, models_fit, param_spec, nwalkers=50, 
+               burn=500, steps=1000, sample_file=None):
+    """
+    Run MCMC to fit model to some simulated data. Fits to all parameters, both 
+    amplitudes and spectral parameters.
+    """
+    # Retrieve instrument/data model and parameter info
+    nu, D_vec, Ninv, beam_mat = data_spec
+    pnames, initial_vals, parent_model = param_spec
+    
+    # Get a list of model parameter names (FIXME: Ignores input pnames for now)
+    param_names = []
+    for mod in models_fit:
+        param_names += mod.param_names
+    
+    # Get a list of amplitude names
+    amp_names = []
+    for mod in models_fit:
+        amp_names += ["%s_%s" % (mod.model, pol) for pol in "IQU"]
+    pnames = amp_names + param_names
+    
+    # Define starting points
+    ndim = len(initial_vals)
+    pos = [initial_vals*(1.+1e-3*np.random.randn(ndim)) for i in range(nwalkers)]
+    
+    # Run emcee sampler
+    sampler = emcee.EnsembleSampler( nwalkers, ndim, lnprob_joint, 
+                                     args=(data_spec, models_fit, param_spec) )
+    sampler.run_mcmc(pos, burn + steps)
+    
+    # Recover samples of spectral parameters and amplitudes
+    samples = sampler.chain[:, burn:, :].reshape((-1, ndim))
+    
+    # Save chains to file
+    if sample_file is not None:
+        np.savetxt(sample_file, samples, fmt="%.6e", header=" ".join(pnames))
+    
+    # Return summary statistics and samples
+    return pnames, samples.T
 
 
 def noise_model(fname="data/CMBpol_extended_noise.dat", scale=1.):
@@ -213,11 +331,16 @@ def generate_data(nu, fsigma_T, fsigma_P, components,
     fsigma[2*len(nu):] = fsigma_P * sigma_nu # Stokes U
     
     #noise_mat = np.matrix( np.diagflat(cmb_signal.flatten() * fsigma) )
-    noise_mat = np.matrix( np.diagflat(fsigma) )
-    Ninv = np.linalg.inv(noise_mat)
-
+    #noise_mat = np.matrix( np.diagflat(fsigma) )
+    #Ninv = np.linalg.inv(noise_mat)
+    
+    # Inverse noise covariance
+    noise_mat = np.identity(fsigma.size) * fsigma
+    Ninv = np.identity(fsigma.size) / fsigma**2.
+    n_vec = (np.matrix(np.random.randn(D_vec.size)) * noise_mat).T
+    
     # Add noise to generated data
-    D_vec += (np.matrix(np.random.randn(D_vec.size)) * noise_mat).T
+    D_vec += n_vec
     return D_vec, Ninv
 
 
@@ -259,6 +382,7 @@ def model_test(nu, D_vec, Ninv, models_fit, initial_vals=None, burn=500,
     print "MCMC run in %d sec." % (time.time() - t0)
     
     # Estimate error on recovered CMB amplitudes
+    # FIXME: Why estimate error using F_matrix on median!?
     F_fg, F_cmb, F = F_matrix(params_out, nu, models_fit, param_spec)
     
     H = F_fg.T * Ninv * F_fg

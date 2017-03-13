@@ -6,7 +6,7 @@ Do MCMC runs to fit FG models to simulated data, over a grid of
 import numpy as np
 import models
 import fitting
-from utils import rj2cmb
+from utils import rj2cmb, bands_log
 import sys
 from multiprocessing import Pool
 
@@ -29,7 +29,7 @@ numax_vals = [300., 400., 500., 600., 700., 800.]
 #numin_vals = [5., 10., 20., 30., 40., 50., 60., 70.]
 #numax_vals = [200., 300., 400., 500., 600., 700.]
 #numin_vals = [5., ] #10., 20., 30., 40., 50., 60., 70.]
-#numax_vals = [100.,] # 300., 400., 500., 600., 700.]
+#numax_vals = [700.,] # 300., 400., 500., 600., 700.]
 
 # Temperature/polarisation noise rms for all bands, as a fraction of T_cmb
 fsigma_T = 1. #0.01
@@ -46,23 +46,16 @@ cmb_model = models.CMB( amp_I=50., amp_Q=0.6, amp_U=0.6 )
 
 name_in = "MBBSync"
 #name_in = "SimpleMBBSync"
-mods_in = [dust_model, sync_model, cmb_model]
+mods_in = [cmb_model, dust_model, sync_model]
+#mods_in = [sync_model, cmb_model]
 amps_in = np.array([m.amps() for m in mods_in])
 params_in = np.array([m.params() for m in mods_in])
 
 # Define models to use for the fitting
 name_fit = "MBBSync"
 #name_fit = "SimpleMBBSync"
-mods_fit = [dust_model, sync_model, cmb_model]
-
-
-def bands_log(nu_min, nu_max, nbands):
-    """
-    Logarithmic set of bands.
-    """
-    freq_vec = np.arange(nbands)
-    return nu_min * (nu_max/nu_min)**(freq_vec/(nbands-1.)) * 1e9 # in Hz
-
+mods_fit = [cmb_model, dust_model, sync_model]
+#mods_fit = [sync_model, cmb_model]
 
 # Expand into all combinations of nu_min,max
 nu_min, nu_max = np.meshgrid(numin_vals, numax_vals)
@@ -96,7 +89,11 @@ def run_model(nu_params):
                                  cmb_amp_in=cmb_model.amps(),
                                  sample_file=fname_samples)
     
+    # FIXME: CMB noise is actually the variance!
+    #cmb_true = np.array([cmb_model.amp_I, cmb_model.amp_Q, cmb_model.amp_U])
     print "chisq =", cmb_chisq, gls_cmb.flatten()
+    #print "Frac. err. (I,Q,U) =", np.sqrt(cmb_noise.flatten()) / cmb_true
+    #print "Bias =", (gls_cmb.flatten() - cmb_true) / np.sqrt(cmb_noise.flatten())
     
     # Append summary statistics to file
     f = open(filename, 'a')
