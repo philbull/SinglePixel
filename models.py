@@ -4,6 +4,124 @@ from utils import *
 from scipy.interpolate import RectBivariateSpline
 
 #-------------------------------------------------------------------------------
+# Generalized (2-component) dust models
+#-------------------------------------------------------------------------------
+
+class DustGen(object):
+    def __init__(self, amp_I, amp_Q, amp_U, 
+                 beta=1.6, dbeta=0.2, Td1=18., Td2=24., fI=1., fQ=1., fU=1.,
+                 name=None):
+        """
+        Generalized 2-component modified blackbody dust component.
+        """
+        self.model = 'dustgen'
+        if self.name is None: self.name = "DustGen"
+        
+        # Reference frequency
+        self.nu_ref = 353. * 1e9
+        
+        # Conversion factor, 1uK_RJ at 353 GHz to uK_CMB
+        nufac = 2.*(353e9)**2. * k / (c**2. * G_nu(353e9, Tcmb))
+        
+        # Set amplitude parameters
+        self.amp_I = amp_I * nufac
+        self.amp_Q = amp_Q * nufac
+        self.amp_U = amp_U * nufac
+        
+        # Set spectral parameters
+        self.beta = beta
+        self.dbeta = dbeta
+        self.Td1 = Td1
+        self.Td2 = Td2
+        self.fI = fI
+        self.fQ = fQ
+        self.fU = fU
+        
+        # List of parameter names
+        self.param_names = [ 'gdust_beta', 'gdust_dbeta', 
+                             'gdust_Td1', 'gdust_Td2',
+                             'gdust_fI', 'gdust_fQ', 'gdust_fU' ]
+    
+    def amps(self):
+        """
+        Return array of amplitudes, [I, Q, U].
+        """
+        return np.array([self.amp_I, self.amp_Q, self.amp_U])
+    
+    def params(self):
+        """
+        Return list of parameters.
+        """
+        return np.array([self.beta, self.dbeta, self.Td1, self.Td2, 
+                         self.fI, self.fQ, self.fU])
+    
+    def set_params(self, params):
+        """
+        Set parameters from an array, using the same ordering as the list 
+        returned by self.params().
+        """
+        self.beta, self.dbeta, self.Td1, self.Td2, \
+                           self.fI, self.fQ, self.fU = params
+    
+    def scaling(self, nu):
+        """
+        Return frequency scaling factor at a given frequency.
+        """
+        beta = self.beta; dbeta = self.dbeta
+        Td1 = self.Td1; Td2 = self.Td2
+        fI = self.fI; fQ = self.fQ; fU = self.fU
+        nu_ref = self.nu_ref
+        
+        # Common factor (incl. conversion factor to dT_CMB)
+        fac = cfac * (nu / nu_ref)**beta * G_nu(nu_ref, Tcmb) / G_nu(nu, Tcmb)
+        
+        # Frequency-dependent scalings
+        comp1 = B_nu(nu, Td1) / B_nu(nu_ref, Td1)
+        comp2 = B_nu(nu, Td2) / B_nu(nu_ref, Td2) * (nu / nu_ref)**dbeta
+        gdust_I = fac * (comp1 + fI * comp2)
+        gdust_Q = fac * (comp1 + fQ * comp2)
+        gdust_U = fac * (comp1 + fU * comp2)
+        
+        return np.array([gdust_I, gdust_Q, gdust_U])
+
+
+class DustGenMBB(DustGen):
+    def __init__(self, *args, **kwargs):
+        """
+        Standard 2-component dust model, with fQ=fU.
+        """
+        super(DustGenMBB, self).__init__(*args, **kwargs)
+        self.model = 'genmbb'
+        if self.name is None: self.name = "DustGenMBB"
+        
+        # Restrict fU = fQ
+        self.fU = self.fQ
+        
+        # Reference frequency
+        self.nu_ref = 353. * 1e9
+        
+        # List of parameter names
+        self.param_names = [ 'gdust_beta', 'gdust_dbeta', 
+                             'gdust_Td1', 'gdust_Td2',
+                             'gdust_fI', 'gdust_fQ',]
+    
+    def params(self):
+        """
+        Return list of parameters.
+        """
+        return np.array([self.beta, self.dbeta, self.Td1, self.Td2, 
+                         self.fI, self.fQ])
+    
+    def set_params(self, params):
+        """
+        Set parameters from an array, using the same ordering as the list 
+        returned by self.params().
+        """
+        self.beta, self.dbeta, self.Td1, self.Td2, self.fI, self.fQ = params
+        self.fU = self.fQ
+
+
+#-------------------------------------------------------------------------------
 # Dust models
 #-------------------------------------------------------------------------------
 
@@ -100,7 +218,7 @@ class DustMBB(DustModel):
         # Frequency-dependent scalings.
         dust_I = (nu / nu_ref)**beta * B_nu(nu, Td) \
                * G_nu(nu_ref, Tcmb) \
-               / ( B_nu(353.*1e9, 20.) * G_nu(nu, Tcmb) )
+               / ( B_nu(353.*1e9, Td) * G_nu(nu, Tcmb) )
         dust_Q = dust_I
         dust_U = dust_I
         
