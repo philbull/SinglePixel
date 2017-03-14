@@ -73,7 +73,7 @@ class DustGen(object):
         nu_ref = self.nu_ref
         
         # Common factor (incl. conversion factor to dT_CMB)
-        fac = cfac * (nu / nu_ref)**beta * G_nu(nu_ref, Tcmb) / G_nu(nu, Tcmb)
+        fac = (nu / nu_ref)**beta * G_nu(nu_ref, Tcmb) / G_nu(nu, Tcmb)
         
         # Frequency-dependent scalings
         comp1 = B_nu(nu, Td1) / B_nu(nu_ref, Td1)
