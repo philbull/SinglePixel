@@ -15,7 +15,7 @@ class DustGen(object):
         Generalized 2-component modified blackbody dust component.
         """
         self.model = 'dustgen'
-        if self.name is None: self.name = "DustGen"
+        self.name = name if name is not None else "DustGen"
         
         # Reference frequency
         self.nu_ref = 353. * 1e9
@@ -92,7 +92,7 @@ class DustGenMBB(DustGen):
         """
         super(DustGenMBB, self).__init__(*args, **kwargs)
         self.model = 'genmbb'
-        if self.name is None: self.name = "DustGenMBB"
+        self.name = name if name is not None else "DustGen"
         
         # Restrict fU = fQ
         self.fU = self.fQ
