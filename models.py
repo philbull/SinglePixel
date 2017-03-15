@@ -21,7 +21,7 @@ class DustGen(object):
         self.nu_ref = 353. * 1e9
         
         # Conversion factor, 1uK_RJ at 353 GHz to uK_CMB
-        nufac = 2.*(353e9)**2. * k / (c**2. * G_nu(353e9, Tcmb))
+        nufac = 1. #2.*(353e9)**2. * k / (c**2. * G_nu(353e9, Tcmb))
         
         # Set amplitude parameters
         self.amp_I = amp_I * nufac
@@ -136,7 +136,7 @@ class DustModel(object):
         self.name = name
         
         # Conversion factor, 1uK_RJ at 353 GHz to uK_CMB
-        nufac = 2.*(353e9)**2. * k / (c**2. * G_nu(353e9, Tcmb))
+        nufac = 1. #2.*(353e9)**2. * k / (c**2. * G_nu(353e9, Tcmb))
         
         # Set amplitude parameters
         self.amp_I = amp_I * nufac
@@ -357,6 +357,73 @@ class DustHD(DustModel):
         
         return np.array([dust_I, dust_Q, dust_U])
 
+#-------------------------------------------------------------------------------
+# AME model
+#-------------------------------------------------------------------------------
+
+class AMEModel(object):
+    def __init__(self, amp_I, amp_Q, amp_U, nu_peak, name=None):
+        """
+        Simple AME component.
+        """
+        self.model = 'ame'
+        self.name = "AME" if name is None else name
+        
+        # Reference frequency
+        self.nu_ref = 30.*1.e9 # Hz
+        
+        # Conversion factor, 1uK_RJ at 30 GHz to uK_CMB
+        #nufac = 2.*(self.nu_ref)**2. * k \
+        #      / (c**2. * G_nu(self.nu_ref, Tcmb))
+        nufac = 1.
+        
+        # Set amplitude parameters
+        self.amp_I = amp_I * nufac
+        self.amp_Q = amp_Q * nufac
+        self.amp_U = amp_U * nufac
+        
+        # Set spectral parameters
+        self.nu_peak = nu_peak
+        
+        # List of parameter names
+        self.param_names = ['ame_nupeak',]
+    
+    def amps(self):
+        """
+        Return array of amplitudes, [I, Q, U].
+        """
+        return np.array([self.amp_I, self.amp_Q, self.amp_U])
+    
+    def params(self):
+        """
+        Return list of parameters.
+        """
+        return np.array([self.nu_peak,])
+    
+    def set_params(self, params):
+        """
+        Set parameters from an array, using the same ordering as the list 
+        returned by self.params().
+        """
+        self.nu_peak = params
+    
+    def scaling(self, nu):
+        """
+        Return frequency scaling factor at a given frequency.
+        """
+        # Peak freq. and reference amplitude
+        nu_peak = self.nu_peak * 1e9 # in Hz
+        ref = (self.nu_ref / nu_peak)**2. \
+            * np.exp(1. - (self.nu_ref / nu_peak)**2.) \
+            * G_nu(nu, Tcmb) / G_nu(self.nu_ref, Tcmb)
+        
+        # Frequency scalings
+        ame_I = (nu / nu_peak)**2. * np.exp(1. - (nu / nu_peak)**2.) / ref
+        ame_Q = ame_I
+        ame_U = ame_I
+        
+        return np.array([ame_I, ame_Q, ame_U])
+
 
 #-------------------------------------------------------------------------------
 # Synchrotron model
@@ -374,8 +441,9 @@ class SyncModel(object):
         self.nu_ref = 30.*1.e9 # Hz
         
         # Conversion factor, 1uK_RJ at 30 GHz to uK_CMB
-        nufac = 2.*(self.nu_ref)**2. * k \
-              / (c**2. * G_nu(self.nu_ref, Tcmb))
+        #nufac = 2.*(self.nu_ref)**2. * k \
+        #      / (c**2. * G_nu(self.nu_ref, Tcmb))
+        nufac = 1.
         
         # Set amplitude parameters
         self.amp_I = amp_I * nufac
@@ -444,8 +512,9 @@ class FreeFreeModel(object):
         self.nu_ref = 30. * 1e9 # Reference frequency
         
         # Conversion factor, 1uK_RJ at 30 GHz to uK_CMB
-        nufac = 2.*(self.nu_ref)**2. * k \
-              / (c**2. * G_nu(self.nu_ref, Tcmb))
+        #nufac = 2.*(self.nu_ref)**2. * k \
+        #      / (c**2. * G_nu(self.nu_ref, Tcmb))
+        nufac = 1.
         
         # Set amplitude parameters
         self.amp_I = amp_I * nufac
@@ -491,12 +560,46 @@ class FreeFreeModel(object):
 class FreeFreePow(FreeFreeModel):
     def __init__(self, *args, **kwargs):
         """
-        Powerlaw synchrotron component.
+        Powerlaw free-free component.
         """
         super(FreeFreePow, self).__init__(*args, **kwargs)
         self.model = 'pow'
         if self.name is None: self.name = "FFPowerlaw"
 
+
+class FreeFreeUnpol(FreeFreeModel):
+    def __init__(self, *args, **kwargs):
+        """
+        Powerlaw free-free component with no polarisation.
+        """
+        super(FreeFreeUnpol, self).__init__(*args, **kwargs)
+        self.model = 'ffunpol'
+        if self.name is None: self.name = "FFUnpol"
+        
+        self.param_names = []
+    
+    def params(self):
+        """
+        Return list of parameters.
+        """
+        return np.array([])
+    
+    def set_params(self, params):
+        """
+        Set parameters from an array, using the same ordering as the list 
+        returned by self.params().
+        """
+        # No parameters; do nothing
+    
+    def scaling(self, nu):
+        """
+        Return frequency scaling factor at a given frequency.
+        """
+        ff_I = (nu / self.nu_ref)**self.ff_beta \
+             * G_nu(self.nu_ref, Tcmb) / G_nu(nu, Tcmb)
+        ff_Q = 0. * ff_I
+        ff_U = 0. * ff_I
+        return np.array([ff_I, ff_Q, ff_U])
 
 #-------------------------------------------------------------------------------
 # CMB model
