@@ -7,13 +7,21 @@ import emcee
 
 def ln_prior(pvals, models):
     """
-    log-prior
+    Logarithm of the prior (mostly just uniform prior bounds for now).
     """
     # Define priors
     priors = {
         'dust_T':       (16., 24.),
         'dust_beta':    (1.4, 1.8),
-        'sync_beta':    (-3.6, -2.8)
+        'sync_beta':    (-3.6, -2.8),
+        'ame_nupeak':   (15., 35.),
+        'gdust_beta':   (1.4, 1.8),
+        'gdust_dbeta':  (-1.5, 1.5),
+        'gdust_Td1':    (5., 30.),
+        'gdust_Td2':    (5., 30.),
+        'gdust_fI':     (0., 1.), 
+        'gdust_fQ':     (-2., 2.), 
+        'gdust_fU':     (-2., 2.)
     }
     
     # Make ordered list of parameter names
