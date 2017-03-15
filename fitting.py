@@ -98,7 +98,8 @@ def lnprob_joint(params, data_spec, models_fit, param_spec):
         return -np.inf
     
     # Create new copies of model objects to work with
-    models = [copy.deepcopy(m) for m in models_fit]
+    #models = [copy.deepcopy(m) for m in models_fit]
+    models = models_fit
     
     # Set new parameter values for the copied model objects, and then get 
     # scalings as a function of freq./polarisation
@@ -109,14 +110,15 @@ def lnprob_joint(params, data_spec, models_fit, param_spec):
         
         # Set new parameter values in the models
         n = m.params().size
-        m.set_params( pvals[pstart:pstart+n] )
+        #m.set_params( pvals[pstart:pstart+n] )
+        mparams = pvals[pstart:pstart+n]
         pstart += n # Increment for next model
         
         # Calculate scaling with freq. given new parameter values
         amp = np.outer( amps[3*i:3*(i+1)], np.ones(nu.size) ) # Npol*Nfreq array
         
         # Add to model prediction of data vector
-        mdata += (amp * m.scaling(nu)).flatten()
+        mdata += (amp * m.scaling(nu, params=mparams)).flatten()
     
     # Calculate chi-squared with data (assumed beam = 1)
     mdata = np.matrix(mdata).T
@@ -147,7 +149,8 @@ def F_matrix(pvals, nu, models_fit, param_spec):
     F = np.zeros((Npol * Nband, Npol * Ncomp))
     
     # Create new copies of model objects to work with
-    models = [copy.deepcopy(m) for m in models_fit]
+    #models = [copy.deepcopy(m) for m in models_fit]
+    models = models_fit
     
     # Set new parameter values for the copied model objects, and then get 
     # scalings as a function of freq./polarisation
@@ -157,12 +160,13 @@ def F_matrix(pvals, nu, models_fit, param_spec):
         
         # Set new parameter values in the models
         n = m.params().size
-        m.set_params( pvals[pstart:pstart+n] )
+        #m.set_params( pvals[pstart:pstart+n] )
+        mparams = pvals[pstart:pstart+n]
         pstart += n # Increment for next model
         if m.model != 'cmb': k += 1 # Increment for next non-CMB model
         
         # Calculate scaling with freq. given new parameter values
-        scal = m.scaling(nu)
+        scal = m.scaling(nu, params=mparams)
         
         for j in range(Npol):
             # Fill FG or CMB -matrix with scalings, as appropriate
