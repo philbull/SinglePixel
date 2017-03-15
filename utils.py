@@ -29,6 +29,12 @@ def rj2cmb(nu, T):
     """
     return 2. * k * (nu / c)**2. * T / G_nu(nu, Tcmb)
 
+def cmb2rj(nu, dT):
+    """
+    Convert a CMB temperature to a Rayleigh-Jeans temperature.
+    """
+    return dT * G_nu(nu, Tcmb) / ( 2. * k * (nu / c)**2. )
+
 def bands_log(nu_min, nu_max, nbands):
     """
     Logarithmic set of bands.
