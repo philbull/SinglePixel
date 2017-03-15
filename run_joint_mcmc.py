@@ -5,17 +5,24 @@ Do MCMC runs to fit FG models to simulated data, over a grid of
 """
 import numpy as np
 import models
+import model_list
 import fitting
 from utils import rj2cmb, bands_log
-import sys, time, os
-from multiprocessing import Pool
+import sys, time, os, copy
+#from multiprocessing import Pool
+from mpi4py import MPI
+
+# Set-up MPI
+comm = MPI.COMM_WORLD
+myid = comm.Get_rank()
+nproc = comm.Get_size()
 
 # Reference noise curve
 NOISE_FILE = "data/core_plus_extended_noise.dat"
 
 # Band parameter definitions
 nbands = 7
-NPROC = 4 #32
+#NPROC = 1 #32
 
 # Set random seed
 SEED = 10
@@ -28,29 +35,8 @@ np.random.seed(SEED)
 in_list = ['cmb', ]; fit_list = ['cmb', ]
 
 # Define input models and their amplitudes/parameters
-dust_model = models.DustMBB( amp_I=rj2cmb(353e9, 150.), 
-                             amp_Q=rj2cmb(353e9, 10.), 
-                             amp_U=rj2cmb(353e9, 10.), 
-                             dust_beta=1.6, dust_T=20. )
-simple_dust_model = models.DustSimpleMBB( amp_I=rj2cmb(353e9, 150.), 
-                             amp_Q=rj2cmb(353e9, 10.), 
-                             amp_U=rj2cmb(353e9, 10.), 
-                             dust_beta=1.6, dust_T=20. )
-simple_dust_model_shifted = models.DustSimpleMBB( 
-                             amp_I=rj2cmb(353e9, 150.), 
-                             amp_Q=rj2cmb(353e9, 10.), 
-                             amp_U=rj2cmb(353e9, 10.), 
-                             dust_beta=1.7, dust_T=20. )
-sync_model = models.SyncPow( amp_I=30., amp_Q=10., amp_U=10., sync_beta=-3.2 )
-cmb_model = models.CMB( amp_I=50., amp_Q=0.6, amp_U=0.6 )
-
-allowed_comps = {
-    'cmb':        cmb_model, 
-    'synch':      sync_model, 
-    'mbb':        dust_model, 
-    'simplembb':  simple_dust_model,
-    'shiftedmbb': simple_dust_model_shifted,
-}
+allowed_comps = model_list.model_dict
+cmb_model = model_list.cmb_model
 
 # Parse args to define input and output models
 if len(sys.argv) > 2:
@@ -75,8 +61,10 @@ name_in = "-".join(in_list)
 name_fit = "-".join(fit_list)
 
 # Frequency ranges
-numin_vals = [15., 20., 25., 30., 35., 40.]
-numax_vals = [300., 400., 500., 600., 700., 800.]
+#numin_vals = [15., 20., 25., 30., 35., 40.]
+#numax_vals = [300., 400., 500., 600., 700., 800.]
+numin_vals = [15., 20., 25., 30., 35.]
+numax_vals = [400., 500.]
 #numin_vals = [5., ] #10., 20., 30., 40., 50., 60., 70.]
 #numax_vals = [700.,] # 300., 400., 500., 600., 700.]
 
@@ -159,17 +147,23 @@ def run_model(nu_params):
     nu = bands_log(nu_min, nu_max, nbands)
     label = str(nu_min) + '_' + str(nu_max)
     
+    # Make copies of models
+    #my_mods_in = [copy.deepcopy(m) for m in mods_in]
+    #my_mods_fit = [copy.deepcopy(m) for m in mods_fit]
+    my_mods_in = mods_in
+    my_mods_fit = mods_fit
+    
     # Name of sample file
     fname_samples = "output/joint_samples_%s.%s_nb%d_seed%d_%s.dat" \
                   % (name_in, name_fit, nbands, SEED, label)
     
     # Simulate data and run MCMC fit
     D_vec, Ninv = fitting.generate_data(nu, fsigma_T, fsigma_P, 
-                                        components=mods_in, 
+                                        components=my_mods_in, 
                                         noise_file=NOISE_FILE)
                                         
-    pnames, samples, ini = model_test(nu, D_vec, Ninv, mods_fit, 
-                                 burn=10, steps=100,
+    pnames, samples, ini = model_test(nu, D_vec, Ninv, my_mods_fit, 
+                                 burn=150, steps=800,
                                  cmb_amp_in=cmb_model.amps(),
                                  sample_file=fname_samples)
     
@@ -203,6 +197,12 @@ def run_model(nu_params):
     f.close()
 
 # Run pool of processes
-pool = Pool(NPROC)
-pool.map(run_model, nu_params)
+#pool = Pool(NPROC)
+#pool.map(run_model, nu_params)
+
+for i in range(len(nu_params)):
+    if i % nproc != myid: continue
+    
+    # Run the model for this set of params
+    run_model(nu_params[i])
 
