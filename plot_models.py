@@ -4,7 +4,7 @@ Example model SEDs
 """
 import numpy as np
 import models
-from utils import rj2cmb, bands_log
+from utils import rj2cmb, cmb2rj, bands_log
 import pylab as P
 
 # Reference noise curve
@@ -24,7 +24,19 @@ simple_dust_model_shifted = models.DustSimpleMBB(
                              amp_Q=rj2cmb(353e9, 10.), 
                              amp_U=rj2cmb(353e9, 10.), 
                              dust_beta=1.7, dust_T=20. )
+
+ame_model = models.AMEModel( amp_I=rj2cmb(30e9, 80.), 
+                             amp_Q=rj2cmb(30e9, 0.), 
+                             amp_U=rj2cmb(30e9, 0.), 
+                             nu_peak=25. )
+
+ff_model = models.FreeFreeUnpol( amp_I=rj2cmb(30e9, 80.), 
+                                 amp_Q=rj2cmb(30e9, 0.), 
+                                 amp_U=rj2cmb(30e9, 0.), 
+                                 ff_beta=-0.118 )
+
 sync_model = models.SyncPow( amp_I=30., amp_Q=10., amp_U=10., sync_beta=-3.2 )
+
 cmb_model = models.CMB( amp_I=50., amp_Q=0.6, amp_U=0.6 )
 
 
@@ -99,22 +111,23 @@ hd_fe_model = models.DustHD( amp_I=rj2cmb(353e9, 150.),
 
 # Dictionary of models
 model_dict = {
-    'cmb':        cmb_model, 
-    'synch':      sync_model, 
-    'mbb':        dust_model, 
-    'simplembb':  simple_dust_model,
-    'shiftedmbb': simple_dust_model_shifted,
-    '2mmb_silcar': two_comp_silcar_model,
-    '2mmb_f99': two_comp_f99_model,
-    '2mbb_cloud': two_comp_cloud_model,
-    '2mbb_fe': two_comp_fe_model,
-    'hd': hd_model,
-    'hd_fe': hd_fe_model
+    'cmb':          cmb_model, 
+    'synch':        sync_model, 
+    'freefree':     ff_model,
+    'mbb':          dust_model, 
+    'simplembb':    simple_dust_model,
+    'shiftedmbb':   simple_dust_model_shifted,
+    '2mmb_silcar':  two_comp_silcar_model,
+    '2mmb_f99':     two_comp_f99_model,
+    '2mbb_cloud':   two_comp_cloud_model,
+    '2mbb_fe':      two_comp_fe_model,
+    'hd':           hd_model,
+    'hd_fe':        hd_fe_model,
+    'ame':          ame_model,
 }
 
 in1 = ['synch', 'simplembb']
 fit1 = ['synch', 'simplembb']
-
 in2 = ['synch', '2mmb_silcar']
 in3 = ['synch', '2mbb_f99']
 in4 = ['synch', '2mbb_cloud']
@@ -129,6 +142,7 @@ nu = np.logspace(0., np.log10(800.), 300) * 1e9 # Freq. in Hz
 ax1 = P.subplot(221)
 ax2 = P.subplot(222)
 ax3 = P.subplot(224)
+axx = P.subplot(223)
 
 # Loop over models and plot them
 for mname in model_dict.keys():
@@ -138,8 +152,10 @@ for mname in model_dict.keys():
     ax1.plot(nu/1e9, I, lw=1.8, label=mname)
     ax2.plot(nu/1e9, np.abs(Q), lw=1.8)
     ax3.plot(nu/1e9, np.abs(U), lw=1.8)
+    
+    axx.plot(nu/1e9, cmb2rj(nu, I), lw=1.8)
 
-ax1.legend(loc='upper center', frameon=False, ncol=2, fontsize=12)
+ax1.legend(loc='upper center', frameon=False, ncol=2, fontsize=8)
 
 ax1.set_xlabel(r"$\nu$ $[(\rm GHz)]$", fontsize=18)
 ax1.set_ylabel(r"$\Delta T$ $[\mu{\rm K}]$", fontsize=18)
@@ -149,6 +165,12 @@ for ax in [ax1, ax2, ax3]:
     ax.set_yscale('log')
     ax.set_xlim((1., 800.))
     ax.set_ylim((1e-2, 1e8))
+
+# FIXME
+axx.set_xscale('log')
+axx.set_yscale('log')
+axx.set_xlim((1., 800.))
+axx.set_ylim((1e-2, 1e3))
 
 P.tight_layout()
 P.show()
