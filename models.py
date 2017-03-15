@@ -63,13 +63,16 @@ class DustGen(object):
         self.beta, self.dbeta, self.Td1, self.Td2, \
                            self.fI, self.fQ, self.fU = params
     
-    def scaling(self, nu):
+    def scaling(self, nu, params=None):
         """
         Return frequency scaling factor at a given frequency.
         """
-        beta = self.beta; dbeta = self.dbeta
-        Td1 = self.Td1; Td2 = self.Td2
-        fI = self.fI; fQ = self.fQ; fU = self.fU
+        if params is not None:
+            beta, dbeta, Td1, Td2, fI, fQ, fU = params
+        else:
+            beta = self.beta; dbeta = self.dbeta
+            Td1 = self.Td1; Td2 = self.Td2
+            fI = self.fI; fQ = self.fQ; fU = self.fU
         nu_ref = self.nu_ref
         
         # Common factor (incl. conversion factor to dT_CMB)
@@ -173,7 +176,7 @@ class DustModel(object):
         """
         self.dust_beta, self.dust_T, self.fcar, self.fsilfe, self.uval = params
     
-    def scaling(self, nu):
+    def scaling(self, nu, params=None):
         return NotImplementedError("The generic DustModel class does not "
                                    "provide a generic scaling() method.")
 
@@ -207,18 +210,21 @@ class DustMBB(DustModel):
         """
         self.dust_beta, self.dust_T = params
     
-    def scaling(self, nu):
+    def scaling(self, nu, params=None):
         """
         Return frequency scaling factor at a given frequency.
         """
-        beta = self.dust_beta
-        Td = self.dust_T
+        if params is not None:
+            dust_beta, dust_T = params
+        else:
+            dust_beta = self.dust_beta
+            dust_T = self.dust_T
         nu_ref = self.nu_ref
         
         # Frequency-dependent scalings.
-        dust_I = (nu / nu_ref)**beta * B_nu(nu, Td) \
+        dust_I = (nu / nu_ref)**dust_beta * B_nu(nu, dust_T) \
                * G_nu(nu_ref, Tcmb) \
-               / ( B_nu(353.*1e9, Td) * G_nu(nu, Tcmb) )
+               / ( B_nu(353.*1e9, dust_T) * G_nu(nu, Tcmb) )
         dust_Q = dust_I
         dust_U = dust_I
         
@@ -249,6 +255,15 @@ class DustSimpleMBB(DustMBB):
         returned by self.params().
         """
         self.dust_T = params
+    
+    def scaling(self, nu, params=None):
+        """
+        Return frequency scaling factor at a given frequency.
+        """
+        if params is not None:
+            dust_T = params
+            params = np.array([self.dust_beta, dust_T])
+        return super(DustSimpleMBB, self).scaling(nu, params)
 
 
 class DustHD(DustModel):
@@ -321,14 +336,17 @@ class DustHD(DustModel):
         """
         self.fcar, self.fsilfe, self.uval = params
     
-    def scaling(self, nu):
+    def scaling(self, nu, params=None):
         """
         Return frequency scaling factor at a given frequency.
         """
-        # Get necessary model parameters and dust interpolation functions
-        fcar = self.fcar
-        fsilfe = self.fsilfe
-        uval = self.uval
+        if params is not None:
+            fcar, fsilfe, uval = params
+        else:
+            fcar = self.fcar
+            fsilfe = self.fsilfe
+            uval = self.uval
+        
         nu_ref = self.nu_ref
         car_i, sil_i, silfe_i, car_p, sil_p, silfe_p = self.dust_interp
         
@@ -407,12 +425,17 @@ class AMEModel(object):
         """
         self.nu_peak = params
     
-    def scaling(self, nu):
+    def scaling(self, nu, params=None):
         """
         Return frequency scaling factor at a given frequency.
         """
-        # Peak freq. and reference amplitude
-        nu_peak = self.nu_peak * 1e9 # in Hz
+        # Peak freq.
+        if params is not None:
+            nu_peak = params * 1e9 # in Hz
+        else:
+            nu_peak = self.nu_peak * 1e9 # in Hz
+        
+        # Reference amplitude
         ref = (self.nu_ref / nu_peak)**2. \
             * np.exp(1. - (self.nu_ref / nu_peak)**2.) \
             * G_nu(nu, Tcmb) / G_nu(self.nu_ref, Tcmb)
@@ -475,11 +498,17 @@ class SyncModel(object):
         """
         self.sync_beta = params
     
-    def scaling(self, nu):
+    def scaling(self, nu, params=None):
         """
         Return frequency scaling factor at a given frequency.
         """
-        sync_I = (nu / self.nu_ref)**self.sync_beta \
+        if params is not None:
+            sync_beta = params
+        else:
+            sync_beta = self.sync_beta
+        
+        # Frequency scaling
+        sync_I = (nu / self.nu_ref)**sync_beta \
                * G_nu(self.nu_ref, Tcmb) / G_nu(nu, Tcmb)
         sync_Q = sync_I
         sync_U = sync_I
@@ -546,11 +575,17 @@ class FreeFreeModel(object):
         """
         self.ff_beta = params
     
-    def scaling(self, nu):
+    def scaling(self, nu, params=None):
         """
         Return frequency scaling factor at a given frequency.
         """
-        ff_I = (nu / self.nu_ref)**self.ff_beta \
+        if params is not None:
+            ff_beta = params
+        else:
+            ff_beta = self.ff_beta
+        
+        # Frequency scaling
+        ff_I = (nu / self.nu_ref)**ff_beta \
              * G_nu(self.nu_ref, Tcmb) / G_nu(nu, Tcmb)
         ff_Q = ff_I
         ff_U = ff_I
@@ -591,7 +626,7 @@ class FreeFreeUnpol(FreeFreeModel):
         """
         # No parameters; do nothing
     
-    def scaling(self, nu):
+    def scaling(self, nu, params=None):
         """
         Return frequency scaling factor at a given frequency.
         """
@@ -640,7 +675,7 @@ class CMB(object):
         """
         pass
     
-    def scaling(self, nu):
+    def scaling(self, nu, params=None):
         """
         Return frequency scaling factor at a given frequency.
         """
