@@ -74,9 +74,6 @@ mods_fit = [allowed_comps[comp] for comp in fit_list]
 amps_in = np.array([m.amps() for m in mods_in])
 params_in = np.array([m.params() for m in mods_in])
 
-print mods_in
-print mods_fit
-
 # Expand into all combinations of nu_min,max
 nu_min, nu_max = np.meshgrid(numin_vals, numax_vals)
 nu_params = np.column_stack((nu_min.flatten(), nu_max.flatten()))
@@ -172,7 +169,7 @@ def run_model(nu_params):
     # Output mean and bias
     summary_str = "%4.4e %4.4e %4.4e " % (nu_min, nu_max, np.min(chisq))
     summary_data = [nu_min, nu_max, np.min(chisq)]
-    header = "nu_min nu_max chi2_min"
+    header = "nu_min nu_max chi2_min "
     for i in range(len(pnames)):
         
         # Mean, std. dev., and fractional shift from true value
