@@ -63,8 +63,8 @@ name_fit = "-".join(fit_list)
 # Frequency ranges
 #numin_vals = [15., 20., 25., 30., 35., 40.]
 #numax_vals = [300., 400., 500., 600., 700., 800.]
-numin_vals = [15., 20., 25., 30., 35.]
-numax_vals = [400., 500.]
+numin_vals = [15., ] #20., 25., 30., 35.]
+numax_vals = [400., ] #500.]
 #numin_vals = [5., ] #10., 20., 30., 40., 50., 60., 70.]
 #numax_vals = [700.,] # 300., 400., 500., 600., 700.]
 
@@ -93,7 +93,7 @@ f.close()
 
 
 def model_test(nu, D_vec, Ninv, models_fit, initial_vals=None, burn=500, 
-               steps=1000, cmb_amp_in=None, sample_file=None):
+               steps=1000, nwalkers=100, cmb_amp_in=None, sample_file=None):
     """
     Generate simulated data given an input model, and perform MCMC fit using 
     another model.
@@ -131,13 +131,14 @@ def model_test(nu, D_vec, Ninv, models_fit, initial_vals=None, burn=500,
     
     # Run MCMC sampler on this model
     t0 = time.time()
-    pnames, samples = fitting.joint_mcmc(data_spec, models_fit, param_spec, 
-                                         burn=burn, steps=steps,
-                                         sample_file=sample_file)
+    pnames, samples, logp = fitting.joint_mcmc(data_spec, models_fit, param_spec, 
+                                               burn=burn, steps=steps, 
+                                               nwalkers=nwalkers,
+                                               sample_file=sample_file)
     print "MCMC run in %d sec." % (time.time() - t0)
     
     # Return parameter names and samples
-    return pnames, samples, initial_vals
+    return pnames, samples, logp, initial_vals
 
 
 def run_model(nu_params):
@@ -162,15 +163,19 @@ def run_model(nu_params):
                                         components=my_mods_in, 
                                         noise_file=NOISE_FILE)
                                         
-    pnames, samples, ini = model_test(nu, D_vec, Ninv, my_mods_fit, 
-                                 burn=150, steps=800,
-                                 cmb_amp_in=cmb_model.amps(),
-                                 sample_file=fname_samples)
+    pnames, samples, logp, ini = model_test(nu, D_vec, Ninv, my_mods_fit, 
+                                            burn=200, steps=1000, nwalkers=100,
+                                            cmb_amp_in=cmb_model.amps(),
+                                            sample_file=fname_samples)
+    
+    # Calculate best-fit chisq.
+    chisq = -2.*logp
+    dof = D_vec.size - len(pnames)
     
     # Output mean and bias
-    summary_str = "%4.4e %4.4e " % (nu_min, nu_max)
-    summary_data = [nu_min, nu_max,]
-    header = "nu_min nu_max "
+    summary_str = "%4.4e %4.4e %4.4e " % (nu_min, nu_max, np.min(chisq))
+    summary_data = [nu_min, nu_max, np.min(chisq)]
+    header = "nu_min nu_max chi2_min"
     for i in range(len(pnames)):
         
         # Mean, std. dev., and fractional shift from true value

@@ -242,7 +242,7 @@ def mcmc(data_spec, models_fit, param_spec, nwalkers=50,
     return params_out, pnames, samples
 
 
-def joint_mcmc(data_spec, models_fit, param_spec, nwalkers=50, 
+def joint_mcmc(data_spec, models_fit, param_spec, nwalkers=100, 
                burn=500, steps=1000, sample_file=None):
     """
     Run MCMC to fit model to some simulated data. Fits to all parameters, both 
@@ -272,6 +272,9 @@ def joint_mcmc(data_spec, models_fit, param_spec, nwalkers=50,
                                      args=(data_spec, models_fit, param_spec) )
     sampler.run_mcmc(pos, burn + steps)
     
+    # Recover log(posterior)
+    logp = sampler.lnprobability
+    
     # Recover samples of spectral parameters and amplitudes
     samples = sampler.chain[:, burn:, :].reshape((-1, ndim))
     
@@ -280,7 +283,7 @@ def joint_mcmc(data_spec, models_fit, param_spec, nwalkers=50,
         np.savetxt(sample_file, samples, fmt="%.6e", header=" ".join(pnames))
     
     # Return summary statistics and samples
-    return pnames, samples.T
+    return pnames, samples.T, logp
 
 
 def noise_model(fname="data/CMBpol_extended_noise.dat", scale=1.):
