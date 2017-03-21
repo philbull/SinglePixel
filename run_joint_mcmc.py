@@ -22,7 +22,7 @@ NOISE_FILE = "data/core_plus_extended_noise.dat"
 
 # Band parameter definitions
 nbands = 7
-#NPROC = 1 #32
+nthreads = 2
 
 # Set random seed
 SEED = 10
@@ -61,16 +61,12 @@ name_in = "-".join(in_list)
 name_fit = "-".join(fit_list)
 
 # Frequency ranges
-#numin_vals = [15., 20., 25., 30., 35., 40.]
-#numax_vals = [300., 400., 500., 600., 700., 800.]
-numin_vals = [15., ] #20., 25., 30., 35.]
-numax_vals = [400., ] #500.]
-#numin_vals = [5., ] #10., 20., 30., 40., 50., 60., 70.]
-#numax_vals = [700.,] # 300., 400., 500., 600., 700.]
+numin_vals = [15., 20., 25., 30., 35., 40.]
+numax_vals = [300., 400., 500., 600., 700., 800.]
 
 # Temperature/polarisation noise rms for all bands, as a fraction of T_cmb
-fsigma_T = 1. #0.01
-fsigma_P = 2. #0.01
+fsigma_T = 1.
+fsigma_P = 2.
 
 # Collect components into lists and set input amplitudes
 mods_in = [allowed_comps[comp] for comp in in_list]
@@ -133,7 +129,8 @@ def model_test(nu, D_vec, Ninv, models_fit, initial_vals=None, burn=500,
     t0 = time.time()
     pnames, samples, logp = fitting.joint_mcmc(data_spec, models_fit, param_spec, 
                                                burn=burn, steps=steps, 
-                                               nwalkers=nwalkers,
+                                               nwalkers=nwalkers, 
+                                               nthreads=nthreads,
                                                sample_file=sample_file)
     print "MCMC run in %d sec." % (time.time() - t0)
     

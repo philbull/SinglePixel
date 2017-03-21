@@ -243,7 +243,7 @@ def mcmc(data_spec, models_fit, param_spec, nwalkers=50,
 
 
 def joint_mcmc(data_spec, models_fit, param_spec, nwalkers=100, 
-               burn=500, steps=1000, sample_file=None):
+               burn=500, steps=1000, nthreads=2, sample_file=None):
     """
     Run MCMC to fit model to some simulated data. Fits to all parameters, both 
     amplitudes and spectral parameters.
@@ -269,7 +269,8 @@ def joint_mcmc(data_spec, models_fit, param_spec, nwalkers=100,
     
     # Run emcee sampler
     sampler = emcee.EnsembleSampler( nwalkers, ndim, lnprob_joint, 
-                                     args=(data_spec, models_fit, param_spec) )
+                                     args=(data_spec, models_fit, param_spec),
+                                     threads=nthreads )
     sampler.run_mcmc(pos, burn + steps)
     
     # Recover log(posterior)
