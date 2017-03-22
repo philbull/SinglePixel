@@ -287,7 +287,7 @@ def joint_mcmc(data_spec, models_fit, param_spec, nwalkers=100,
     return pnames, samples.T, logp
 
 
-def noise_model(fname="data/CMBpol_extended_noise.dat", scale=1.):
+def noise_model_old(fname="data/CMBpol_extended_noise.dat", scale=1.):
     """
     Load noise model from file and create interpolation function as a fn of 
     frequency. This is the noise per pixel, for some arbitrary pixel size.
@@ -313,6 +313,44 @@ def noise_model(fname="data/CMBpol_extended_noise.dat", scale=1.):
     
     # Construct interpolation function
     return interp1d(nu, sigma, kind='linear', bounds_error=False)
+
+
+def noise_model(fname="data/noise_coreplus_extended.dat", scale=1.):
+    """
+    Load noise model from file and create interpolation function as a fn of 
+    frequency. This is the noise per pixel, for some arbitrary pixel size.
+    """
+    # Load from file
+    dat = np.genfromtxt(fname).T
+    if dat.shape[0] == 3:
+        nu, fwhm, sigma = dat
+    elif dat.shape[0] == 2:
+        nu, sigma = dat
+    else:
+        raise ValueError("Unexpected number of columns in noise file.")
+    
+    # Rescale by constant overall factor
+    sigma *= scale
+    
+    # Work in log-space
+    sigma = np.log(sigma)
+    
+    # Extrapolate at the ends of the frequency range
+    if nu[0] > 1.:
+        sigma0 = sigma[0] \
+               + (sigma[1] - sigma[0]) / (nu[1] - nu[0]) * (1. - nu[0])
+        sigman = sigma[-1] \
+               + (sigma[-1] - sigma[-2]) / (nu[-1] - nu[-2]) * (1e3 - nu[-1])
+        if sigma0 < 0.: sigma0 = sigma[0]
+        if sigman < 0.: sigman = sigma[-1]
+        
+        # Add to end of range
+        nu = np.concatenate(([1.,], nu, [1e3,]))
+        sigma = np.concatenate(([sigma0,], sigma, [sigman,]))
+    
+    # Construct interpolation function
+    _interp = interp1d(nu, sigma, kind='linear', bounds_error=False)
+    return lambda freq: np.exp(_interp(freq))
 
 
 def generate_data(nu, fsigma_T, fsigma_P, components, 
