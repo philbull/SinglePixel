@@ -17,8 +17,13 @@ comm = MPI.COMM_WORLD
 myid = comm.Get_rank()
 nproc = comm.Get_size()
 
-# Reference noise curve
-NOISE_FILE = "data/core_plus_extended_noise.dat"
+# Prefix for output files
+PREFIX = "joint"
+
+# Reference noise curve (assumes noise file contains sigma_P=sigma_Q=sigma_U 
+# in uK_CMB.deg for a given experiment)
+NOISE_FILE = "data/noise_coreplus_extended.dat"
+#NOISE_FILE = "data/core_plus_extended_noise.dat"
 
 # Band parameter definitions
 nbands = 7
@@ -65,8 +70,8 @@ numin_vals = [15., 20., 25., 30., 35., 40.]
 numax_vals = [300., 400., 500., 600., 700., 800.]
 
 # Temperature/polarisation noise rms for all bands, as a fraction of T_cmb
-fsigma_T = 1.
-fsigma_P = 2.
+fsigma_T = 1. / np.sqrt(2.)
+fsigma_P = 1.
 
 # Collect components into lists and set input amplitudes
 mods_in = [allowed_comps[comp] for comp in in_list]
@@ -79,8 +84,8 @@ nu_min, nu_max = np.meshgrid(numin_vals, numax_vals)
 nu_params = np.column_stack((nu_min.flatten(), nu_max.flatten()))
 
 # Prepare output file for writing
-filename = "output/joint_summary_%s.%s_nb%d_seed%d.dat" \
-         % (name_in, name_fit, nbands, SEED)
+filename = "output/%s_summary_%s.%s_nb%d_seed%d.dat" \
+         % (PREFIX, name_in, name_fit, nbands, SEED)
 f = open(filename, 'w')
 f.close()
 
@@ -149,8 +154,8 @@ def run_model(nu_params):
     my_mods_fit = mods_fit
     
     # Name of sample file
-    fname_samples = "output/joint_samples_%s.%s_nb%d_seed%d_%s.dat" \
-                  % (name_in, name_fit, nbands, SEED, label)
+    fname_samples = "output/%s_samples_%s.%s_nb%d_seed%d_%s.dat" \
+                  % (PREFIX, name_in, name_fit, nbands, SEED, label)
     
     # Simulate data and run MCMC fit
     D_vec, Ninv = fitting.generate_data(nu, fsigma_T, fsigma_P, 
