@@ -1,0 +1,9 @@
+# LiteBIRD
+# https://arxiv.org/abs/1509.04714 Table 1
+# Band[GHz], BeamFWHM[arcmin], sigmaQ[uK.deg]
+60	75	0.172
+78	58	0.108
+100	45	0.078
+140	32	0.062
+195	24	0.0517
+280	16	0.063
