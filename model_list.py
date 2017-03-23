@@ -108,6 +108,11 @@ hd_fe_model = models.DustHD( amp_I=rj2cmb(353e9, DUST_I),
                              fsilfe = 1.e3,
                              uval = 0.0 )
 
+# General 2MBB dust model with fQ=fU
+gen_dust_model = models.DustGenMBB( amp_I=rj2cmb(353e9, DUST_I),
+                                    amp_Q=rj2cmb(353e9, DUST_P),
+                                    amp_U=rj2cmb(353e9, DUST_P) )
+
 # Dictionary of models
 model_dict = {
     'cmb':          cmb_model, 
@@ -122,6 +127,7 @@ model_dict = {
     '2mbb_fe':      two_comp_fe_model,
     'hd':           hd_model,
     'hd_fe':        hd_fe_model,
+    'genmbb':       gen_dust_model,
     'ame':          ame_model,
 }
 
