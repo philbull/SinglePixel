@@ -95,7 +95,7 @@ class DustGenMBB(DustGen):
         """
         super(DustGenMBB, self).__init__(*args, **kwargs)
         self.model = 'genmbb'
-        self.name = name if name is not None else "DustGen"
+        if self.name is None: self.name = "DustGenMBB"
         
         # Restrict fU = fQ
         self.fU = self.fQ
