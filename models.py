@@ -122,7 +122,15 @@ class DustGenMBB(DustGen):
         """
         self.beta, self.dbeta, self.Td1, self.Td2, self.fI, self.fQ = params
         self.fU = self.fQ
-
+    
+    def scaling(self, nu, params=None):
+        """
+        Return frequency scaling factor at a given frequency.
+        """
+        # Make fQ = fU
+        if params is not None:
+            params = np.concatenate((params, [params[-1],))
+        return super(DustGenMBB, self).scaling(nu, params)
 
 #-------------------------------------------------------------------------------
 # Dust models
