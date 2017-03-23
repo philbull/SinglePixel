@@ -129,7 +129,7 @@ class DustGenMBB(DustGen):
         """
         # Make fQ = fU
         if params is not None:
-            params = np.concatenate((params, [params[-1],))
+            params = np.concatenate((params, [params[-1],]))
         return super(DustGenMBB, self).scaling(nu, params)
 
 #-------------------------------------------------------------------------------
