@@ -89,7 +89,7 @@ nu_params = np.column_stack((nu_min.flatten(), nu_max.flatten()))
 # Prepare output files for writing
 filename = "output/%s_summary_%s.%s_nb%d_seed%d" \
              % (PREFIX, name_in, name_fit, nbands, SEED)
-cut_range = np.arange(NSTEPS, 200)
+cut_range = np.arange(NSTEPS, step=200)
 for cut in cut_range:
     fname = filename + "_cut%d.dat" % cut
     f = open(fname, 'w')
@@ -176,10 +176,11 @@ def run_model(nu_params):
     chisq = -2.*logp
     dof = D_vec.size - len(pnames)
     
-    # Reshape sample array into (Nparams, Nsamples, Nwalkers)
+    # Reshape sample array into (Nparams, Nwalkers, Nsamples)
     samples = samples.reshape((samples.shape[0], 
                                NWALKERS, 
                                samples.shape[1]/NWALKERS))
+    
     
     # Loop over different burn-in cuts to produce summary stats
     for cut in cut_range:
@@ -196,10 +197,10 @@ def run_model(nu_params):
         for i in range(len(pnames)):
             
             # Mean, std. dev., and fractional shift from true value
-            _mean = np.mean(samples[i,cut:,:])
-            _std = np.std(samples[i,cut:,:])
-            _fracbias = (np.mean(samples[i,cut:,:]) - ini[i]) \
-                      / np.std(samples[i,cut:,:])
+            _mean = np.mean(samples[i,:,cut:])
+            _std = np.std(samples[i,:,cut:])
+            _fracbias = (np.mean(samples[i,:,cut:]) - ini[i]) \
+                      / np.std(samples[i,:,cut:])
             stats = [_mean, _std, _fracbias]
             
             # Keep summary stats, to be written to file
