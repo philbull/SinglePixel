@@ -18,7 +18,10 @@ myid = comm.Get_rank()
 nproc = comm.Get_size()
 
 # Prefix for output files
-PREFIX = "joint"
+PREFIX = "final"
+NBURN = 500
+NSTEPS = 10000
+NWALKERS = 100
 
 # Reference noise curve (assumes noise file contains sigma_P=sigma_Q=sigma_U 
 # in uK_CMB.deg for a given experiment)
@@ -83,11 +86,14 @@ params_in = np.array([m.params() for m in mods_in])
 nu_min, nu_max = np.meshgrid(numin_vals, numax_vals)
 nu_params = np.column_stack((nu_min.flatten(), nu_max.flatten()))
 
-# Prepare output file for writing
-filename = "output/%s_summary_%s.%s_nb%d_seed%d.dat" \
-         % (PREFIX, name_in, name_fit, nbands, SEED)
-f = open(filename, 'w')
-f.close()
+# Prepare output files for writing
+filename = "output/%s_summary_%s.%s_nb%d_seed%d" \
+             % (PREFIX, name_in, name_fit, nbands, SEED)
+cut_range = np.arange(NSTEPS, 200)
+for cut in cut_range:
+    fname = filename + "_cut%d.dat" % cut
+    f = open(fname, 'w')
+    f.close()
 
 
 def model_test(nu, D_vec, Ninv, models_fit, initial_vals=None, burn=500, 
@@ -148,14 +154,13 @@ def run_model(nu_params):
     label = str(nu_min) + '_' + str(nu_max)
     
     # Make copies of models
-    #my_mods_in = [copy.deepcopy(m) for m in mods_in]
-    #my_mods_fit = [copy.deepcopy(m) for m in mods_fit]
     my_mods_in = mods_in
     my_mods_fit = mods_fit
     
     # Name of sample file
-    fname_samples = "output/%s_samples_%s.%s_nb%d_seed%d_%s.dat" \
-                  % (PREFIX, name_in, name_fit, nbands, SEED, label)
+    #fname_samples = "output/%s_samples_%s.%s_nb%d_seed%d_%s.dat" \
+    #              % (PREFIX, name_in, name_fit, nbands, SEED, label)
+    fname_samples = None
     
     # Simulate data and run MCMC fit
     D_vec, Ninv = fitting.generate_data(nu, fsigma_T, fsigma_P, 
@@ -163,42 +168,58 @@ def run_model(nu_params):
                                         noise_file=NOISE_FILE)
                                         
     pnames, samples, logp, ini = model_test(nu, D_vec, Ninv, my_mods_fit, 
-                                            burn=200, steps=1000, nwalkers=100,
+                                            burn=NBURN, steps=NSTEPS, 
+                                            nwalkers=NWALKERS,
                                             cmb_amp_in=cmb_model.amps(),
                                             sample_file=fname_samples)
-    
     # Calculate best-fit chisq.
     chisq = -2.*logp
     dof = D_vec.size - len(pnames)
     
-    # Output mean and bias
-    summary_str = "%4.4e %4.4e %4.4e " % (nu_min, nu_max, np.min(chisq))
-    summary_data = [nu_min, nu_max, np.min(chisq)]
-    header = "nu_min nu_max chi2_min "
-    for i in range(len(pnames)):
-        
-        # Mean, std. dev., and fractional shift from true value
-        stats = [ np.mean(samples[i]), np.std(samples[i]),
-                  (np.mean(samples[i]) - ini[i]) / np.std(samples[i]) ]
-        
-        # Keep summary stats, to be written to file
-        #summary_str += "%5.5e %5.5e %5.5e " % stats
-        summary_data += stats
-        header += "mean_%s std_%s Delta_%s " % (pnames[i], pnames[i], pnames[i])
-        
-        print "%14s: %+3.3e +/- %3.3e [Delta = %+3.3f]" \
-              % (pnames[i], stats[0], stats[1], stats[2])
+    # Reshape sample array into (Nparams, Nsamples, Nwalkers)
+    samples = samples.reshape((samples.shape[0], 
+                               NWALKERS, 
+                               samples.shape[1]/NWALKERS))
     
-    # If file is empty, set flag to write header when saving output
-    has_header = False if os.stat(filename).st_size == 0 else True
-    
-    # Append summary statistics to file
-    f = open(filename, 'a')
-    if has_header:
-        np.savetxt(f, np.atleast_2d(summary_data))
-    else:
-        np.savetxt(f, np.atleast_2d(summary_data), header=header[:-1])
-    f.close()
+    # Loop over different burn-in cuts to produce summary stats
+    for cut in cut_range:
+        
+        # Set output filename
+        fname = filename + "_cut%d.dat" % cut
+        
+        # Output mean and bias
+        summary_str = "%4.4e %4.4e %4.4e " % (nu_min, nu_max, np.min(chisq))
+        summary_data = [nu_min, nu_max, np.min(chisq)]
+        header = "nu_min nu_max chi2_min "
+        
+        # Loop over parameter names
+        for i in range(len(pnames)):
+            
+            # Mean, std. dev., and fractional shift from true value
+            _mean = np.mean(samples[i,cut:,:])
+            _std = np.std(samples[i,cut:,:])
+            _fracbias = (np.mean(samples[i,cut:,:]) - ini[i]) \
+                      / np.std(samples[i,cut:,:])
+            stats = [_mean, _std, _fracbias]
+            
+            # Keep summary stats, to be written to file
+            summary_data += stats
+            header += "mean_%s std_%s Delta_%s " \
+                    % (pnames[i], pnames[i], pnames[i])
+            
+            print "%14s: %+3.3e +/- %3.3e [Delta = %+3.3f]" \
+                  % (pnames[i], stats[0], stats[1], stats[2])
+        
+        # If file is empty, set flag to write header when saving output
+        has_header = False if os.stat(fname).st_size == 0 else True
+        
+        # Append summary statistics to file
+        f = open(fname, 'a')
+        if has_header:
+            np.savetxt(f, np.atleast_2d(summary_data))
+        else:
+            np.savetxt(f, np.atleast_2d(summary_data), header=header[:-1])
+        f.close()
 
 # Run pool of processes
 #pool = Pool(NPROC)
