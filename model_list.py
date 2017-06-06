@@ -68,15 +68,15 @@ two_comp_f99_model = models.DustGen( amp_I=rj2cmb(353e9, DUST_I/3.4),
 # depolarization, i.e. fQ != fU
 two_comp_cloud_model = models.DustGen( 
                                      amp_I=rj2cmb(353e9, DUST_I/2.),
-                                     amp_Q=rj2cmb(353e9, DUST_P/2.1),
-                                     amp_U=rj2cmb(353e9, DUST_P/1.8),
+                                     amp_Q=rj2cmb(353e9, DUST_P/3.0),
+                                     amp_U=rj2cmb(353e9, DUST_P/1.5),
                                      beta = 1.6,
                                      dbeta = 0.,
                                      Td1 = 20.,
                                      Td2 = 15.,
                                      fI = 1.0,
-                                     fQ = 1.1,
-                                     fU = 0.8 )
+                                     fQ = 2.0,
+                                     fU = 0.5 )
 
 # 2MBB Model with Fe grains
 # Note: polarized orthogonally to normal dust with beta = 0
