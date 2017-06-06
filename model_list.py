@@ -3,7 +3,7 @@ import models
 from utils import rj2cmb
 
 DUST_I = 50.
-DUST_P = 10. / 1.41
+DUST_P = 7. / 1.41
 
 # Define input models and their amplitudes/parameters
 dust_model = models.DustMBB( amp_I=rj2cmb(353e9, DUST_I), 
@@ -40,28 +40,27 @@ cmb_model = models.CMB( amp_I=50., amp_Q=0.6, amp_U=0.6 )
 # Silicate + Carbonaceous grains as 2 MBBs
 two_comp_silcar_model = models.DustGen( 
                                      amp_I=rj2cmb(353e9, DUST_I/1.25),
-                                     amp_Q=rj2cmb(353e9, DUST_P/1.25),
-                                     amp_U=rj2cmb(353e9, DUST_P/1.25),
+                                     amp_Q=rj2cmb(353e9, DUST_P),
+                                     amp_U=rj2cmb(353e9, DUST_P),
                                      beta = 1.6,
                                      dbeta = 0.2,
-                                     Td1 = 18.,
-                                     Td2 = 22.,
+                                     Td1 = 15.,
+                                     Td2 = 24.,
                                      fI = 0.25,
-                                     fQ = 0.25,
-                                     fU = 0.25 )
+                                     fQ = 0.,
+                                     fU = 0. )
 
-# Finkbeiner 1999 Model (should perhaps update fI,fQ,FQ to
-#                        representative values based on F99)
-two_comp_f99_model = models.DustGen( amp_I=rj2cmb(353e9, DUST_I/1.2),
-                                     amp_Q=rj2cmb(353e9, DUST_P/1.2),
-                                     amp_U=rj2cmb(353e9, DUST_P/1.2),
-                                     beta = 1.5,
-                                     dbeta = 1.1,
-                                     Td1 = 9.6,
-                                     Td2 = 16.4,
-                                     fI = 0.2,
-                                     fQ = 0.2,
-                                     fU = 0.2 )
+# Meisner+Finkbeiner 2015 model
+two_comp_f99_model = models.DustGen( amp_I=rj2cmb(353e9, DUST_I/3.4),
+                                     amp_Q=rj2cmb(353e9, DUST_P/3.4),
+                                     amp_U=rj2cmb(353e9, DUST_P/3.4),
+                                     beta = 1.63,
+                                     dbeta = 1.19,
+                                     Td1 = 9.75,
+                                     Td2 = 15.7,
+                                     fI = 2.4,
+                                     fQ = 2.4,
+                                     fU = 2.4 )
 
 # "Cloud" Dust Model
 # Dust same composition everywhere, but different temperature
