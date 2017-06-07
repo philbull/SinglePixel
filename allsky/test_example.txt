@@ -1,0 +1,17 @@
+# In order to produce the data for the all-sky fits, run
+
+repository2data.py
+
+For instance: import repository2data as repo, repo.main( Nside = 32 )
+
+# In order to run the allsky fit in serial mode, run
+
+launch_allsky_serial.py
+
+For instance, from the command line run: python launch_allsky_serial
+
+# In order to plot the results (even if the run has not yet finished), run
+
+plot_allsky_results.py
+
+For instance, in a python session: import plot_allsky_results as plot, plot.main( Nside=32)
