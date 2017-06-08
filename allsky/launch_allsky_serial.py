@@ -6,7 +6,7 @@ import pdb
 
 def main( in_list = 'sync,mbb', 
           fit_list = 'sync,mbb',
-          Nside = 32,
+          Nside = 16,
           redo = 0 ):
 
     in_list_all = [ 'cmb', ] ; fit_list_all = [ 'cmb', ]

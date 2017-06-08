@@ -10,14 +10,14 @@ import numpy as np
 
 import pdb
 
-def main( model_in = [ 'sync', 'mbb' ],
-          model_fit = [ 'sync', 'mbb' ],
+def main( in_list = 'sync,mbb',
+          fit_list = 'sync,mbb',
           Nside = 16,
           SEED = 100 ):
 
     # Getting the relevant strings
     amp_names_in, param_names_in, amp_names_fit, param_names_fit, name_in, name_fit = \
-    model_list_allsky.get_model_param_names( in_list = 'sync,mbb', fit_list = 'sync,mbb' )
+    model_list_allsky.get_model_param_names( in_list = in_list, fit_list = fit_list )
 
     filename = 'output/final_summary_%s.%s_nb7_seed100_nside%04i.fits' % ( name_in, name_fit, Nside )
     # in/out/difference->3, if there is a difference
@@ -25,11 +25,55 @@ def main( model_in = [ 'sync', 'mbb' ],
     N_fit = len( amp_names_fit ) + len( param_names_fit )
     Nmaps = N_in + N_fit + np.min( [ N_in, N_fit ] )
     maps = hp.read_map( filename, range( Nmaps ) )
+
+    # Allsky maps
+    # For now, needs to get amplitude names and parameter names. Check reference frequencies and units, as well.
+    ttl_plt = amp_names_fit + param_names_fit 
+    unts_plt = [ 'micro K CMB', 'micro K CMB', 'micro K CMB', 'micro K RJ', 'micro K RJ', 'micro K RJ', 'micro K RJ', 'micro K RJ', 'micro K RJ', '', '', 'K' ]
+    # Temporary
+    if ( Nmaps / 3 ) != len( unts_plt ):
+        unts_plt = [ "" for x in range( Nmaps / 3 ) ]
+  
+    for i_mp in range( Nmaps / 3 ):
+        fig = plt.figure( num = None, figsize=( 12, 8 ), dpi=80, facecolor='w', edgecolor='k')
+        # Input. Discarding totally odd values, or UNSEEN, for the computation of the plot range
+        q = np.where( np.abs( maps[ i_mp * 3 ] ) < 1e10 ) 
+        # sgm = 2
+
+        mn_mllvw = np.percentile( maps[ i_mp * 3 ][ q ], 5 ) # np.min( maps[ i_mp * 3 ][ q ] ) - sgm * np.std( maps[ i_mp * 3 ][ q ] )
+        mx_mllvw = np.percentile( maps[ i_mp * 3 ][ q ], 95 ) # np.max( maps[ i_mp * 3 ][ q ] ) + sgm * np.std( maps[ i_mp * 3 ][ q ] )
+
+        hp.mollview( maps[ i_mp * 3 ], norm = 'linear', sub = ( 2, 2, 1 ), title = 'INPUT MAP', 
+                     unit = unts_plt[ i_mp ], min = mn_mllvw, max = mx_mllvw )
+        # Output
+        hp.mollview( maps[ i_mp * 3 + 1 ], norm = 'linear', sub = ( 2, 2, 2 ), title = 'OUTPUT MAP', 
+                     unit = unts_plt[ i_mp ], min = mn_mllvw, max = mx_mllvw )
+
+        # Bias in terms of the RMS
+        frc_bias = np.full( 12 * Nside * Nside, hp.UNSEEN )
+        # Only fill in values with pixels that had non-zero error values
+        q_gd = np.where( maps[ i_mp * 3 + 2 ] != 0 )
+        ## Tuple to array
+        q_gd = q_gd[ 0 ] 
+        frc_bias[ q_gd ] = ( maps[ i_mp * 3 + 1 ][ q_gd ] - maps[ i_mp * 3 ][ q_gd ] ) / maps[ i_mp * 3 + 2 ][ q_gd ]
+        mn_mllvw = np.percentile( frc_bias[ q ], 10 ) # np.min( frc_bias[ q ] )
+        mx_mllvw = np.percentile( frc_bias[ q ], 90 ) # np.max( frc_bias[ q ] )
+        if mn_mllvw == mx_mllvw:
+            mn_mllvw = 0
+            mx_mllvw = 0
+
+        hp.mollview( frc_bias, norm = 'linear', sub = ( 2, 1, 2 ), title = 'FRACTIONAL BIAS', 
+                     margins = [ 0, 0.02, 0, 0.02 ], 
+                     unit = 'x 1 sigma', min = mn_mllvw, max = mx_mllvw )
+        plt.suptitle( ttl_plt[ i_mp ], fontsize = 18 )
+    
+    plt.show() 
+
     # Power spectrum
     cmb_maps_in = [ maps[ 0 ], maps[ 3 ], maps[ 6 ] ]
     cl_in = hp.anafast( cmb_maps_in, lmax = 3 * Nside - 1 )
     # Noise realizations
-    N_NS = 200
+    N_NS = 100
     # Loop over (array of normal distributed values, different at each pixel)
     cl_tmp = np.zeros( ( N_NS, 6, 3 * Nside ), dtype = 'float32' )
     # Number of pixels in the map
@@ -51,7 +95,7 @@ def main( model_in = [ 'sync', 'mbb' ],
     cl_plt[ :, :, 1 ] = np.std( cl_tmp, axis = 0 )
     ell = np.arange( 3 * Nside )
     fct_ell = ell * ( ell + 1 ) / 2 / np.pi
-    fct_ell[ : ] = 1 
+    fct_ell[ : ] = 1
     # Some plots
     # Shades from https://stackoverflow.com/questions/25994048/confidence-regions-of-1sigma-for-a-2d-plot
     ttl_plt = [ 'TT', 'EE', 'BB', 'TE', 'TB', 'EB' ]
@@ -60,9 +104,15 @@ def main( model_in = [ 'sync', 'mbb' ],
         if i_plt < 3:
             plt.loglog( ell, fct_ell * cl_in[ i_plt ], '-k', marker = 'o', label = 'Input' )
             plt.loglog( ell, fct_ell * cl_plt[ i_plt, :, 0 ], '-b', marker = 'o', label = 'Fit' )
+            # Just avoiding to overplot a fit that is the input
+            if sum( q_unseen ) > 0.03 * 12 * Nside * Nside:
+                plt.loglog( ell, fct_ell * cl_in[ i_plt ], '-k', marker = 'o' )
         else:
             plt.plot( ell, fct_ell * cl_in[ i_plt ], '-k', marker = 'o', label = 'Input' )
             plt.plot( ell, fct_ell * cl_plt[ i_plt, :, 0 ], '-b', marker = 'o', label = 'Fit' )
+            # Just avoiding to overplot a fit that is the input
+            if sum( q_unseen ) > 0.03 * 12 * Nside * Nside:
+                plt.plot( ell, fct_ell * cl_in[ i_plt ], '-k', marker = 'o' )
         LB3 = fct_ell * ( cl_plt[ i_plt, :, 0 ] - 3 * cl_plt[ i_plt, :, 1 ] )
         UB3 = fct_ell * ( cl_plt[ i_plt, :, 0 ] + 3 * cl_plt[ i_plt, :, 1 ] )
         plt.fill_between( ell, LB3, UB3, where = UB3 >= LB3, facecolor='blue', alpha= 0.1, zorder = 0 )
@@ -77,7 +127,7 @@ def main( model_in = [ 'sync', 'mbb' ],
         #plt.loglog( ell, LB, '-.b', zorder = 3, alpha = 0.6 )
         #plt.loglog( ell, UB, '-.b', zorder = 3, alpha = 0.6 )
         plt.xlim( [ 2, 3 * Nside ] )
-        plt.ylim( [ np.min( fct_ell[ 2 : 3 * Nside - 1 ] * cl_plt[ i_plt, 2 : 3 * Nside - 1, 0 ] ), 
+        plt.ylim( [ np.min( fct_ell[ 2 : 3 * Nside - 1 ] * cl_plt[ i_plt, 2 : 3 * Nside - 1, 0 ] ),
                     np.max( fct_ell[ 2 : 3 * Nside - 1 ] * cl_plt[ i_plt, 2 : 3 * Nside - 1, 0 ] ) ] )
         plt.legend( loc = 'lower right', prop = { 'size' : 18 } )
         plt.xlabel( r'$\ell$', fontsize = 18 )
@@ -86,32 +136,7 @@ def main( model_in = [ 'sync', 'mbb' ],
         plt.title( ttl_plt[ i_plt ], fontsize = 18 )
 
     plt.show()
-    # For now, needs to get amplitude names and parameter names. Check reference frequencies and units, as well.
-    ttl_plt = amp_names_fit + param_names_fit 
-    unts_plt = [ 'micro K CMB', 'micro K CMB', 'micro K CMB', 'micro K RJ', 'micro K RJ', 'micro K RJ', 'micro K RJ', 'micro K RJ', 'micro K RJ', '', '', 'K' ]
-    for i_mp in range( Nmaps / 3 ):
-        fig = plt.figure( num = None, figsize=( 12, 8 ), dpi=80, facecolor='w', edgecolor='k')
-        # Input
-        q = np.where( np.abs( maps[ i_mp * 3 ] ) < 1e10 ) 
-        sgm = 2
-        
-        mn_mllvw = np.percentile( maps[ i_mp * 3 ][ q ], 10 ) # np.min( maps[ i_mp * 3 ][ q ] ) - sgm * np.std( maps[ i_mp * 3 ][ q ] )
-        mx_mllvw = np.percentile( maps[ i_mp * 3 ][ q ], 90 ) # np.max( maps[ i_mp * 3 ][ q ] ) + sgm * np.std( maps[ i_mp * 3 ][ q ] )
-        hp.mollview( maps[ i_mp * 3 ], norm = 'linear', sub = ( 2, 2, 1 ), title = 'INPUT MAP', 
-                     unit = unts_plt[ i_mp ], min = mn_mllvw, max = mx_mllvw )
-        # Output
-        hp.mollview( maps[ i_mp * 3 + 1 ], norm = 'linear', sub = ( 2, 2, 2 ), title = 'OUTPUT MAP', 
-                     unit = unts_plt[ i_mp ], min = mn_mllvw, max = mx_mllvw )
-        # Bias in terms of the RMS
-        frc_bias = ( maps[ i_mp * 3 + 1 ] - maps[ i_mp * 3 ] ) / maps[ i_mp * 3 + 2 ]
-        mn_mllvw = np.percentile( frc_bias[ q ], 10 ) # np.min( frc_bias[ q ] )
-        mx_mllvw = np.percentile( frc_bias[ q ], 90 ) # np.max( frc_bias[ q ] )
-        hp.mollview( frc_bias, norm = 'linear', sub = ( 2, 1, 2 ), title = 'FRACTIONAL BIAS', 
-                     margins = [ 0, 0.02, 0, 0.02 ], 
-                     unit = 'x 1 sigma', min = mn_mllvw, max = mx_mllvw )
-        plt.suptitle( ttl_plt[ i_mp ], fontsize = 18 )
-    
-    plt.show() 
+
 
 if __name__ == '__main__':
      main()

@@ -15,6 +15,14 @@ def sync_model( SYNC_I = 30, SYNC_Q = 10, SYNC_U = 10, SYNC_BETA = -3.2 ):
     sync_model = models.SyncPow( amp_I = SYNC_I, amp_Q = SYNC_Q, amp_U = SYNC_U, sync_beta = SYNC_BETA )
     return sync_model
 
+## Free-free model
+def ff_model( FF_I = 30, FF_Q = 0, FF_U = 0, FF_BETA = -0.118 ):
+    ff_model = models.FreeFreeUnpol( amp_I = rj2cmb( 30e9, FF_I ),
+                                     amp_Q = rj2cmb( 30e9, FF_Q ),
+                                     amp_U = rj2cmb( 30e9, FF_U ),
+                                     ff_beta = FF_BETA )
+    return ff_model
+
 ## Dust models
 
 def dust_model( DUST_I = 50, DUST_Q = 10 / 1.41, DUST_U = 10 / 1.41,
@@ -32,9 +40,9 @@ def two_comp_silcar_model( DUST_I = 50, DUST_Q = 10 / 1.41, DUST_U = 10 / 1.41,
                            DUST_T1 = 18.,
                            DUST_T2 = 22.,
                            DUST_fI = 0.25, DUST_fQ = 0.25, DUST_fU = 0.25 ):
-    two_comp_silcar_model = models.DustGen( amp_I=rj2cmb( 353e9, DUST_I / ( 1 + DUST_fI ) ), 
-                                            amp_Q=rj2cmb( 353e9, DUST_Q / ( 1 + DUST_fQ ) ),
-                                            amp_U=rj2cmb( 353e9, DUST_U / ( 1 + DUST_fU ) ),
+    two_comp_silcar_model = models.DustGen( amp_I=rj2cmb( 353e9, DUST_I ) , #/ ( 1 + DUST_fI ) ), 
+                                            amp_Q=rj2cmb( 353e9, DUST_Q ) , #/ ( 1 + DUST_fQ ) ),
+                                            amp_U=rj2cmb( 353e9, DUST_U ) , #/ ( 1 + DUST_fU ) ),
                                             beta = DUST_BETA,
                                             dbeta = DUST_DBETA,
                                             Td1 = DUST_T1,
@@ -44,14 +52,27 @@ def two_comp_silcar_model( DUST_I = 50, DUST_Q = 10 / 1.41, DUST_U = 10 / 1.41,
                                             fU = DUST_fU )
     return two_comp_silcar_model
 
+# HD17 Model with Fe
+def hd_fe_model( DUST_I = 50, DUST_Q = 10 / 1.41, DUST_U = 10 / 1.41,
+                 FCAR_IN = 1.e3, FSILFE_IN = 1.e3, UVAL_IN = 0.0 ):
+    hd_fe_model = models.DustHD( amp_I = rj2cmb( 353e9, DUST_I ),
+                                 amp_Q = rj2cmb( 353e9, DUST_Q ),
+                                 amp_U = rj2cmb( 353e9, DUST_U ),
+                                 fcar = FCAR_IN,
+                                 fsilfe = FSILFE_IN,
+                                 uval = UVAL_IN )
+    return hd_fe_model
+
 
 # Default dictionary with the amplitudes and parameters of foregrounds and CMB
 ## Same naming convention as in the model_du=ict below
 foreground_dict_default = {
     'cmb':		[ 50, 0.6, 0.6 ],
     'sync':		[ 30., 10., 10., -3.2 ],
+    'freefree':		[ 30, 0, 0, -0.118 ],
     'mbb':		[ 50., 10 / 1.41, 10 / 1.41, 1.6, 20. ], 
     '2mbb_silcar':	[ 50 / 1.25, 10 / 1.41 / 1.25, 10 / 1.41 / 1.25, 1.6, 0.2, 18., 22., 0.25, 0.25, 0.25 ],
+    'hd_fe':		[ 50, 10 / 1.41, 10 / 1.41, 1e3, 1e3, 0. ],
 }
 
 # Dictionary of models (see model_values_allsky.py)
@@ -59,12 +80,18 @@ def model_dict( fg_dict = foreground_dict_default ):
 
     model_dict = {
         'cmb':		cmb_model( fg_dict[ 'cmb' ][ 0 ], fg_dict[ 'cmb' ][ 1 ], fg_dict[ 'cmb' ][ 2 ] ), 
-        'sync':		sync_model( fg_dict[ 'sync' ][ 0 ], fg_dict[ 'sync' ][ 1 ], fg_dict[ 'sync' ][ 2 ], fg_dict[ 'sync' ][ 3 ] ), 
-        'mbb':		dust_model( fg_dict[ 'mbb' ][ 0 ], fg_dict[ 'mbb' ][ 1 ], fg_dict[ 'mbb' ][ 2 ], fg_dict[ 'mbb' ][ 3 ], fg_dict[ 'mbb' ][ 4 ] ), 
+        'sync':		sync_model( fg_dict[ 'sync' ][ 0 ], fg_dict[ 'sync' ][ 1 ], fg_dict[ 'sync' ][ 2 ], 
+			fg_dict[ 'sync' ][ 3 ] ), 
+        'freefree':	ff_model( fg_dict[ 'freefree' ][ 0 ], fg_dict[ 'freefree' ][ 1 ], fg_dict[ 'freefree' ][ 2 ],
+			fg_dict[ 'freefree' ][ 3 ] ),
+        'mbb':		dust_model( fg_dict[ 'mbb' ][ 0 ], fg_dict[ 'mbb' ][ 1 ], fg_dict[ 'mbb' ][ 2 ], 
+			fg_dict[ 'mbb' ][ 3 ], fg_dict[ 'mbb' ][ 4 ] ), 
         '2mbb_silcar':	two_comp_silcar_model( fg_dict[ '2mbb_silcar' ][ 0 ], fg_dict[ '2mbb_silcar' ][ 1 ], fg_dict[ '2mbb_silcar' ][ 2 ], 
-                                                fg_dict[ '2mbb_silcar' ][ 3 ], fg_dict[ '2mbb_silcar' ][ 4 ], fg_dict[ '2mbb_silcar' ][ 5 ],
-						fg_dict[ '2mbb_silcar' ][ 6 ], fg_dict[ '2mbb_silcar' ][ 7 ], fg_dict[ '2mbb_silcar' ][ 8 ],
-						fg_dict[ '2mbb_silcar' ][ 9 ] ),
+			fg_dict[ '2mbb_silcar' ][ 3 ], fg_dict[ '2mbb_silcar' ][ 4 ], fg_dict[ '2mbb_silcar' ][ 5 ],
+			fg_dict[ '2mbb_silcar' ][ 6 ], fg_dict[ '2mbb_silcar' ][ 7 ], fg_dict[ '2mbb_silcar' ][ 8 ], 
+			fg_dict[ '2mbb_silcar' ][ 9 ] ),
+	'hd_fe':	hd_fe_model( fg_dict[ 'hd_fe' ][ 0 ], fg_dict[ 'hd_fe' ][ 1 ], fg_dict[ 'hd_fe' ][ 2 ],
+			fg_dict[ 'hd_fe' ][ 3 ], fg_dict[ 'hd_fe' ][ 4 ], fg_dict[ 'hd_fe' ][ 5 ] ),
     }
     return model_dict
 

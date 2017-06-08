@@ -178,7 +178,13 @@ def model_test(nu, D_vec, Ninv, models_fit, initial_vals=None, burn=500,
 def run_model(nu_params, Nside, Npix):
 
     ## Number of maps
-    n_maps = ( amps_in.size + params_in.size ) * 3   
+    n_maps = 0
+    for ii in range( len( amps_in ) ):
+        n_maps += len( amps_in[ ii ] )
+    for jj in range( len( params_in ) ):
+        n_maps += len( params_in[ jj ] )
+    ## For each amplitude & parameter, we store 3 results: in/out/err
+    n_maps *= 3
     if os.path.isfile( filename + '.fits' ) == 1:
         # Check whether there are already some results (if the fit was forced to be re-started, the values are hp.UNSEEN)  
         data_ini = hp.read_map( filename + '.fits', range( n_maps ), verbose = False )
