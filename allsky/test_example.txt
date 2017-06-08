@@ -15,3 +15,108 @@ For instance, from the command line run: python launch_allsky_serial
 plot_allsky_results.py
 
 For instance, in a python session: import plot_allsky_results as plot, plot.main( Nside=32)
+
+
+### Other examples
+
+import launch_allsky_serial as launch
+launch.main( Nside = 16, in_list='sync, 2mbb_silcar', fit_list='sync, 2mbb_silcar' )
+
+
+import launch_allsky_serial as launch
+launch.main( Nside = 16, in_list='freefree, mbb', fit_list='freefree, mbb' )
+
+import launch_allsky_serial as launch
+launch.main( Nside = 16, in_list='sync, hd_fe', fit_list='sync, hd_fe' )
+
+
+###
+
+import plot_allsky_results as plot_allsky
+
+plot_allsky.main( Nside = 16, in_list = 'sync, 2mbb_silcar', fit_list = 'sync, 2mbb_silcar' )
+
+plot_allsky.main( Nside = 16, in_list = 'freefree, mbb', fit_list = 'freefree, mbb' )
+
+plot_allsky.main( Nside = 16,  in_list='sync, hd_fe', fit_list='sync, hd_fe' )
+
+
+plot_allsky.main( Nside = 64,  in_list='sync, mbb', fit_list='sync, mbb' )
+unch_allsky_serial.pyc        plot_allsky_results.py          test_example.txt
+model_list_allsky.py            plot_allsky_results.pyc
+model_list_allsky.pyc           repository
+srhildeb@LMC-042248~/caltech/python/SinglePixel/allsky> cd output/
+srhildeb@LMC-042248~/caltech/python/SinglePixel/allsky/output> lst
+total 21584
+-rw-r--r--  1 srhildeb  staff   481K Jun  7 12:18 final_summary_cmb-sync-hd_fe.cmb-sync-hd_fe_nb7_seed100_nside0016.fits
+-rw-r--r--  1 srhildeb  staff   408K Jun  7 12:18 final_summary_cmb-freefree-mbb.cmb-freefree-mbb_nb7_seed100_nside0016.fits
+-rw-r--r--  1 srhildeb  staff   627K Jun  7 12:18 final_summary_cmb-sync-2mbb_silcar.cmb-sync-2mbb_silcar_nb7_seed100_nside0016.fits
+-rw-r--r--  1 srhildeb  staff    14K Jun  7 12:10 final_summary_cmb-sync-hd_fe.cmb-sync-hd_fe_nb7_seed100_nside0001.fits
+-rw-r--r--  1 srhildeb  staff    11K Jun  7 12:06 final_summary_cmb-hd_fe.cmb-hd_fe_nb7_seed100_nside0001.fits
+drwxr-xr-x  6 srhildeb  staff   204B Jun  5 13:59 first_runs
+-rw-r--r--  1 srhildeb  staff   6.8M Jun  5 07:16 final_summary_cmb-sync-mbb.cmb-sync-mbb_nb7_seed100_nside0064.fits
+-rw-r--r--  1 srhildeb  staff   1.7M May 31 06:22 final_summary_cmb-sync-mbb.cmb-sync-mbb_nb7_seed100_nside0032.fits
+-rw-r--r--  1 srhildeb  staff   121K May 29 16:52 final_summary_cmb-sync-mbb.cmb-sync-mbb_nb7_seed10_nside0008.fits
+-rw-r--r--  1 srhildeb  staff   444K May 29 04:47 final_summary_cmb-sync-mbb.cmb-sync-mbb_nb7_seed100_nside0016.fits
+srhildeb@LMC-042248~/caltech/python/SinglePixel/allsky/output>
+[ LMC-042248 ][                                  0 RH  1 CH  2- P  [3*S!]                                   ][ 07 Jun ]
+# In order to produce the data for the all-sky fits, run
+
+repository2data.py
+
+For instance: import repository2data as repo, repo.main( Nside = 32 )
+
+# In order to run the allsky fit in serial mode, run
+
+launch_allsky_serial.py
+
+For instance, from the command line run: python launch_allsky_serial
+
+# In order to plot the results (even if the run has not yet finished), run
+
+plot_allsky_results.py
+
+For instance, in a python session: import plot_allsky_results as plot_allsky, plot_allsky.main( Nside=32)
+
+
+### Other examples
+
+import launch_allsky_serial as launch
+launch.main( Nside = 16, in_list='sync, 2mbb_silcar', fit_list='sync, 2mbb_silcar' )
+
+
+import launch_allsky_serial as launch
+launch.main( Nside = 16, in_list='freefree, mbb', fit_list='freefree, mbb' )
+
+import launch_allsky_serial as launch
+launch.main( Nside = 16, in_list='sync, hd_fe', fit_list='sync, hd_fe' )
+
+import launch_allsky_serial as launch
+launch.main( Nside = 64, in_list='sync, mbb', fit_list='sync, mbb' )
+
+
+
+
+### P5-P95 // CMB rlz
+
+import plot_allsky_results as plot_allsky
+
+plot_allsky.main( Nside = 64,  in_list='sync, mbb', fit_list='sync, mbb' )
+
+
+
+plot_allsky.main( Nside = 16, in_list = 'sync, 2mbb_silcar', fit_list = 'sync, 2mbb_silcar' )
+
+
+
+plot_allsky.main( Nside = 16, in_list = 'freefree, mbb', fit_list = 'freefree, mbb' )
+
+
+
+plot_allsky.main( Nside = 16,  in_list='sync, hd_fe', fit_list='sync, hd_fe' )
+
+
+
+
+
+
