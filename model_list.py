@@ -51,16 +51,16 @@ two_comp_silcar_model = models.DustGen(
                                      fU = 0. )
 
 # Meisner+Finkbeiner 2015 model
-two_comp_f99_model = models.DustGen( amp_I=rj2cmb(353e9, DUST_I/3.4),
-                                     amp_Q=rj2cmb(353e9, DUST_P/3.4),
-                                     amp_U=rj2cmb(353e9, DUST_P/3.4),
+two_comp_f99_model = models.DustGen( amp_I=rj2cmb(353e9, DUST_I/1.19),
+                                     amp_Q=rj2cmb(353e9, DUST_P/1.19),
+                                     amp_U=rj2cmb(353e9, DUST_P/1.19),
                                      beta = 1.63,
                                      dbeta = 1.19,
                                      Td1 = 9.75,
                                      Td2 = 15.7,
-                                     fI = 2.4,
-                                     fQ = 2.4,
-                                     fU = 2.4 )
+                                     fI = 0.19,
+                                     fQ = 0.19,
+                                     fU = 0.19 )
 
 # "Cloud" Dust Model
 # Dust same composition everywhere, but different temperature
