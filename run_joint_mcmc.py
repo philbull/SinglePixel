@@ -10,18 +10,18 @@ import fitting
 from utils import rj2cmb, bands_log
 import sys, time, os, copy
 #from multiprocessing import Pool
-from mpi4py import MPI
+#from mpi4py import MPI
 
 # Set-up MPI
-comm = MPI.COMM_WORLD
-myid = comm.Get_rank()
-nproc = comm.Get_size()
+#comm = MPI.COMM_WORLD
+#myid = comm.Get_rank()
+#nproc = comm.Get_size()
 
 # Prefix for output files
 PREFIX = "final"
-NBURN = 500
-NSTEPS = 10000
-NWALKERS = 100
+NBURN = 50
+NSTEPS = 100
+NWALKERS = 50
 
 # Reference noise curve (assumes noise file contains sigma_P=sigma_Q=sigma_U 
 # in uK_CMB.deg for a given experiment)
@@ -227,7 +227,7 @@ def run_model(nu_params):
 #pool.map(run_model, nu_params)
 
 for i in range(len(nu_params)):
-    if i % nproc != myid: continue
+#    if i % nproc != myid: continue
     
     # Run the model for this set of params
     run_model(nu_params[i])
