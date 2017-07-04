@@ -1,4 +1,4 @@
-*.pyc
+chains/*
 *.png
 *.tar.gz
 /output/
@@ -6,3 +6,6 @@
 /allsky/output/
 /allsky/fig/
 /allsky/repository/
+test.out
+*.pyc
+hd_model.py
