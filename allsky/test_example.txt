@@ -38,9 +38,9 @@ pip install 'astropy==1.2.1'
 
 # 4) Public data to formatted data for the runs:
 
-In order to produce the data for the all-sky fits, run with the desired Nside. All the data should however be in the repository, so this step should be done when the input data are changed. The file repository2data.py has all the information of the origin of the public data (mostly Planck release 2.02, with Commander maps)
+In order to produce the data for the all-sky fits, run witht he desired Nside. All the data should however be in the repository, so this step should be done when the input data are changed. The file repository2data.py has all the information of the origin of the public data (mostly Planck release 2.02, with Commander maps)
 
-* Example in a python session: import repository2data as repo, repo.main( Nside = 32 )
+* Example in a pythons ession: import repository2data as repo, repo.main( Nside = 32 )
 
 # 5) MPI version: in order to run the allsky fit in different processors, run in the command line (here I choose 5 processes, but it depends on the machine, etc)
 
@@ -48,7 +48,7 @@ mpiexec -n 5 python launch_allsky.py
 
 # 5.1) Intermediate results:
 
-The all-sky code will store the intermediate resutls in the final file, keeping all pixels that have not been analyzed yet with the Healpix UNSEEN value. The code *may* be stopped at any time, voluntarily or not, and the next time is run, it will pick up from the last stored results. 
+The all-sky code will store the intermediate resutls int he final file, keeping all pixels that have not been analyzed yet with the Healpix UNSEEN value. The code *may* be stopped at any time, voluntarily or not, and the next time is run, it will pick up from the last stored results. 
 
 It also estimates the time that it will take to finish the run.
 
@@ -86,7 +86,7 @@ For instance, in a python session: import plot_allsky_results_serial as plot ; p
 
 #### MPI
 
-Modify the models in the input string and the fit string and/or Nside to get new results.
+Modify the models in the input string an the fit string and/or Nside to get new results.
 
 #### SERIAL
 
