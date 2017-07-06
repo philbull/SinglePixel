@@ -6,7 +6,7 @@ import pdb
 
 def main( in_list = 'sync,mbb', 
           fit_list = 'sync,mbb',
-          Nside = 16,
+          Nside = 4,
           redo = 0 ):
 
     in_list_all = [ 'cmb', ] ; fit_list_all = [ 'cmb', ]
@@ -31,7 +31,7 @@ def main( in_list = 'sync,mbb',
     # Loop
     for Npix in range( 12 * Nside * Nside ):
         if q_unseen[ Npix ]:
-	    cmmnd = 'python run_joint_mcmc_allsky.py 100 "%s" "%s" %i %i' % ( in_list, fit_list, Nside, Npix )
+	    cmmnd = 'python run_joint_mcmc_allsky_serial.py 100 "%s" "%s" %i %i' % ( in_list, fit_list, Nside, Npix )
 	    print cmmnd
 	    os.system( cmmnd )
 
