@@ -13,7 +13,7 @@ import time
 
 def main( in_list = 'sync,freefree,mbb', 
           fit_list = 'sync,freefree,mbb',
-          Nside = 2,
+          Nside = 32,
           nu_min = 15,
           nu_max = 800,
           n_bands = 7,
