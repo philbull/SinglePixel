@@ -3,7 +3,7 @@ import models
 from utils import rj2cmb
 
 DUST_I = 50.
-DUST_P = 7. / 1.41
+DUST_P = 5. / 1.41
 
 # Define input models and their amplitudes/parameters
 dust_model = models.DustMBB( amp_I=rj2cmb(353e9, DUST_I), 
