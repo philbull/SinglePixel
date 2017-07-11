@@ -2,21 +2,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 import models
 from utils import rj2cmb
+from utils import cmb2rj
 import random
 
 '''
 add conversions for
 rj
 physical (Jansky / strd)
-cmbtemp 
+cmbtemp
 '''
 
 DUST_I = 50.
 DUST_P = 10. / 1.41
 
 PRECISION = 400
-curves_summed = 5
-sums = 2
+curves_summed = 1
+sums = 80
 
 nu_Hz = np.logspace(np.log10(1e9), np.log10(800e9), PRECISION)
 nu_GHz = nu_Hz / 1.0e9
@@ -50,6 +51,8 @@ for i in range(sums):
         variable_B = np.random.uniform(1.0,2.4)
         variable_T = np.random.uniform(10.0,30.0)
 
+
+
         single_composite_T.append(variable_T)
         single_composite_betas.append(variable_B)
 
@@ -57,7 +60,11 @@ for i in range(sums):
 
     universal_set_T.append(single_composite_T)
     universal_set_betas.append(single_composite_betas)
+
     plt.plot(nu_GHz, cumulative_dust_I/curves_summed)
+
+
+
 
 #Plot curves from B,T statistics from universal set
 median_B = np.median(universal_set_betas)
@@ -67,11 +74,12 @@ max_T= np.max(universal_set_T)
 min_B = np.min(universal_set_betas)
 max_B= np.max(universal_set_betas)
 
-plt.plot(nu_GHz, update_dust_var(max_B, max_T), "r--", linewidth = 2) #max B with max as red dashed
-plt.plot(nu_GHz, update_dust_var(min_B, min_T), "g--", linewidth = 2) #min B with min T green dashes
-#medianline = plt.plot(nu_GHz, update_dust_var(median_B, median_T), "black", linewidth = 4 , label = "medianline") #median
+plt.plot(nu_GHz, update_dust_var(max_B, max_T), "r--", linewidth = 2, label = "Max B,T") #max B with max as red dashed
+plt.plot(nu_GHz, update_dust_var(min_B, min_T), "g--", linewidth = 2, label = "Min B,T") #min B with min T green dashes
 
-#plt.legend(handles=[medianline])
+
+plt.plot(nu_GHz, update_dust_var(median_B, median_T), "black", linewidth = 4 , label = "Median B, T") #median
+
 
 
 #Plots CMB
@@ -82,7 +90,8 @@ plt.plot(nu_GHz, cmb_model.scaling(nu_Hz)[0])
 plt.grid("on")
 plt.title("MBB Dust Model\n" + str(sums) + " Arithmetic Means of " +  str(curves_summed) + " MBB Dust Spectra\n" + str(PRECISION) + " Frequency Samples")
 plt.xlabel(" $\\nu$ (GHz)")
-plt.ylabel("Intensity of Light (Units?)")
+plt.ylabel("T $_{CMB}$")
 plt.yscale('log')
 plt.xscale('log')
+plt.legend(loc = "lower right")
 plt.show()
