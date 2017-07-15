@@ -18,7 +18,7 @@ import sys, time, os, copy
 
 # Prefix for output files
 PREFIX = "final"
-NBURN =  50
+NBURN = 50
 NSTEPS = 100
 NWALKERS = 50
 
@@ -120,6 +120,7 @@ def model_test(nu, D_vec, Ninv, models_fit, initial_vals=None, burn=500,
         # Parent model list
         amp_parent_model.append(mod)
         param_parent_model.append(mod)
+
     # Concatenate parameter lists
     pnames = amp_names + param_names
     pvals = np.concatenate((amp_vals, param_vals))
