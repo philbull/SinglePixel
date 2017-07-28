@@ -5,7 +5,6 @@ from scipy.interpolate import interp1d
 import copy, time
 import emcee
 
-
 def ln_prior(pvals, models):
     """
     Logarithm of the prior (mostly just uniform prior bounds for now).
@@ -85,9 +84,6 @@ def lnprob_joint(params, data_spec, models_fit, param_spec):
     """
     # Retrieve instrument/data model and parameter info
     nu, D_vec, Ninv, beam_mat = data_spec
-
-
-
     pnames, initial_vals, parent_model = param_spec
     Nmod = len(models_fit)
     Npol = 3
