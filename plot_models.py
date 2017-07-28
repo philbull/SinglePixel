@@ -15,10 +15,10 @@ NOISE_FILE = "data/core_plus_extended_noise.dat"
 
 # Dictionary of models
 model_dict = {
-    'cmb':          cmb_model, 
-    'synch':        sync_model, 
+    'cmb':          cmb_model,
+    'synch':        sync_model,
     #'freefree':     ff_model,
-    'mbb':          dust_model, 
+    'mbb':          dust_model,
     #'simplembb':    simple_dust_model,
     #'shiftedmbb':   simple_dust_model_shifted,
     '2mbb_silcar':  two_comp_silcar_model,
@@ -32,7 +32,7 @@ model_dict = {
 
 colour_dict = {
     'cmb':          'k',
-    'synch':        '#3954EC', 
+    'synch':        '#3954EC',
     'mbb':          '#AF1934',
     '2mbb_f99':     '#9FD69B',
     '2mbb_silcar':  '#2EA822',
@@ -45,8 +45,8 @@ colour_dict = {
 
 dash_dict = {
     'cmb':          [],
-    'synch':        [], 
-    'mbb':          [8,3], 
+    'synch':        [],
+    'mbb':          [8,3],
     '2mbb_f99':     [],
     '2mbb_silcar':  [5,3,2,3],
     '2mbb_cloud':   [],
@@ -79,15 +79,15 @@ axx = P.subplot(223)
 for mname in model_dict.keys():
     mod = model_dict[mname]
     I, Q, U = np.atleast_2d(mod.amps()).T * mod.scaling(nu)
-    
-    ax1.plot(nu/1e9, I, lw=1.8, label=mname, color=colour_dict[mname], 
+
+    ax1.plot(nu/1e9, I, lw=1.8, label=mname, color=colour_dict[mname],
              dashes=dash_dict[mname])
-    ax2.plot(nu/1e9, np.abs(Q), lw=1.8, color=colour_dict[mname], 
+    ax2.plot(nu/1e9, np.abs(Q), lw=1.8, color=colour_dict[mname],
              dashes=dash_dict[mname])
-    ax3.plot(nu/1e9, np.abs(U), lw=1.8, color=colour_dict[mname], 
+    ax3.plot(nu/1e9, np.abs(U), lw=1.8, color=colour_dict[mname],
              dashes=dash_dict[mname])
-    
-    axx.plot(nu/1e9, cmb2rj(nu, I), lw=1.8, color=colour_dict[mname], 
+
+    axx.plot(nu/1e9, cmb2rj(nu, I), lw=1.8, color=colour_dict[mname],
              dashes=dash_dict[mname])
 
 
@@ -119,4 +119,3 @@ axx.set_ylim((1e-2, 1e3))
 
 P.tight_layout()
 P.show()
-
