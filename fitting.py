@@ -15,13 +15,15 @@ def ln_prior(pvals, models):
         'dust_beta':    (1.4, 1.8),
         'sync_beta':    (-3.6, -2.8),
         'ame_nupeak':   (15., 35.),
-        'gdust_beta':   (1.4, 1.8),
-        'gdust_dbeta':  (-1.5, 1.5),
+        #'gdust_beta':   (1.4, 1.8),
+        'gdust_beta':   (1.1, 1.8),
+        #'gdust_dbeta':  (-1.5, 1.5),
+        'gdust_dbeta':  (-1.8, 1.8),
         'gdust_Td1':    (5., 30.),
         'gdust_Td2':    (5., 30.),
         'gdust_fI':     (0., 1.), 
         'gdust_fQ':     (-2., 2.), 
-        'gdust_fU':     (-2., 2.)
+        'gdust_fU':     (-2., 2.),
     }
     
     # Make ordered list of parameter names
@@ -116,6 +118,11 @@ def lnprob_joint(params, data_spec, models_fit, param_spec):
         
         # Calculate scaling with freq. given new parameter values
         amp = np.outer( amps[3*i:3*(i+1)], np.ones(nu.size) ) # Npol*Nfreq array
+        
+        # Apply positivity prior on I amplitudes of all components
+        #if m.model == 'ame':
+        if np.any(amp[0] < 0.):
+            return -np.inf
         
         # Add to model prediction of data vector
         mdata += (amp * m.scaling(nu, params=mparams)).flatten()
