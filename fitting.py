@@ -361,7 +361,8 @@ def noise_model(fname="data/noise_coreplus_extended.dat", scale=1.):
 
 
 def generate_data(nu, fsigma_T, fsigma_P, components, 
-                  noise_file="data/core_plus_extended_noise.dat"):
+                  noise_file="data/core_plus_extended_noise.dat",
+                  idx_px = 0):
     """
     Create a mock data vector from a given set of models, including adding a 
     noise realization.
@@ -370,8 +371,12 @@ def generate_data(nu, fsigma_T, fsigma_P, components,
     # the signal at a given frequency (should be in uK_CMB)
     signal = 0
     cmb_signal = 0
+    # Disabled for the case of the allsky    
+    if idx_px == 0:
+        print( "(FITTING.PY) Parameters in the input model:" )
     for comp in components:
-        print comp.param_names
+        if idx_px == 0:
+            print comp.param_names
         
         # Add this component to total signal
         signal += np.atleast_2d(comp.amps()).T * comp.scaling(nu)

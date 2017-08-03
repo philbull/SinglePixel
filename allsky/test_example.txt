@@ -1,0 +1,105 @@
+#############################################
+# ALL-SKY VERSION OF THE SINGLE PIXEL CODE:
+#
+# 1) GitHub
+# 2) Dependencies
+# 3) Installation notes (one possible way)
+# 4) Public data to formatted data for the runs
+# 5) MPI version
+# 5.1) Intermediate results
+# 6) Output
+# 7) Plotting the results
+# 8) All-sky serial version
+# 9) Some more examples
+
+#############################################
+
+# 1) GitHub
+
+The code can be found in https://github.com/philbull/SinglePixel
+
+# 2) Dependencies
+
+Same as Single Pixel code. As far as I know, pyhton 2.7 is a good choice.
+Modules: scipy, emcee, mpi4py, healpy 1.9.1, astropy 1.2.1, camb
+
+# 3) Installation notes:
+
+This is a possible way among many other possiblities:
+
+3.1) (optional) create a virtualenv, if necessary. For instance, if the help desk is not responding as well as expected.
+3.2) install pip if it is not installed.
+3.3) install scipy, emcee, mpi4py and
+pip install 'healpy==1.9.1' with pip
+3.4) Desinstall version 1.3.1 of astropy (due to healpy being behind):
+pip uninstall astropy
+pip install 'astropy==1.2.1'
+3.5) pip install --egg camb (needs --egg until camb gets an updated version for newer versions of python)
+
+# 4) Public data to formatted data for the runs:
+
+In order to produce the data for the all-sky fits, run witht he desired Nside. All the data should however be in the repository, so this step should be done when the input data are changed. The file repository2data.py has all the information of the origin of the public data (mostly Planck release 2.02, with Commander maps)
+
+* Example in a pythons ession: import repository2data as repo, repo.main( Nside = 32 )
+
+# 5) MPI version: in order to run the allsky fit in different processors, run in the command line (here I choose 5 processes, but it depends on the machine, etc)
+
+mpiexec -n 5 python launch_allsky.py
+
+# 5.1) Intermediate results:
+
+The all-sky code will store the intermediate resutls int he final file, keeping all pixels that have not been analyzed yet with the Healpix UNSEEN value. The code *may* be stopped at any time, voluntarily or not, and the next time is run, it will pick up from the last stored results. 
+
+It also estimates the time that it will take to finish the run.
+
+# 6) Output:
+
+The output is a FITS file. It is stored in a directory called 'output' in the allsky directory.
+
+The file contains the initial, final and RMS values for each of the parameters of the *fit* model. The file run_joint_mcmc_allsky_split contains exactly what is stored and how.
+
+The program plot_allsky_results.py opens it and does some convenient operations and plot that show what is the structure.
+
+# 7) Plotting the results.
+
+Plotting is easy. Either from the command line or from a python session. The results *can* be seen at any time. No need to wait until the run has ended (see # 5.1)
+
+* Example: in a python session type (assuming this combination of input&fit models at this Nside exists):
+
+import plot_allsky_results as plot_allsky ; plot_allsky.main( in_list = 'sync,freefree,mbb', fit_list = 'sync,freefree,mbb', Nside = 32 )
+
+# 8) Serial version:
+
+The serial version is an intermediate version written before the full MPI version was done. It allows one to run in a single process the all-sky run. Obviously it will take much longer. However, it may be useful in some situations.
+
+Also, runnning mpiexec with 1 process would be equivalent.
+
+* Example: for instance, from the command line run: python launch_allsky_serial
+
+# In order to plot the results (even if the run has not yet finished), run
+
+plot_allsky_results_serial.py
+
+For instance, in a python session: import plot_allsky_results_serial as plot ; plot.main( Nside=32)
+
+# 9) Some more examples: 
+
+#### MPI
+
+Modify the models in the input string an the fit string and/or Nside to get new results.
+
+#### SERIAL
+
+import launch_allsky_serial as launch
+launch.main( Nside = 16, in_list='sync, 2mbb_silcar', fit_list='sync, 2mbb_silcar' )
+
+import launch_allsky_serial as launch
+launch.main( Nside = 16, in_list='sync, hd_fe', fit_list='sync, hd_fe' )
+
+import plot_allsky_results_serial as plot_allsky
+
+plot_allsky.main( Nside = 16, in_list = 'sync, 2mbb_silcar', fit_list = 'sync, 2mbb_silcar' )
+
+plot_allsky.main( Nside = 16,  in_list= 'sync, hd_fe', fit_list='sync, hd_fe' )
+
+###############################################
