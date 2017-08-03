@@ -307,19 +307,19 @@ class DustHD(DustModel):
         wav = data_sil[:,0]
         uvec = np.arange(-3.,5.01,0.1)
         # Units of Jy/sr/H
-        sil_i = interpolate.RectBivariateSpline(uvec,wav,(data_sil[:,3:84]*
-                                        (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
-        car_i = interpolate.RectBivariateSpline(uvec,wav,(data_car[:,3:84]*
-                                        (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
-        silfe_i = interpolate.RectBivariateSpline(uvec,wav,(data_silfe[:,3:84]*
-                                        (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
+        sil_i = RectBivariateSpline(uvec,wav,(data_sil[:,3:84] *
+                                    (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
+        car_i = RectBivariateSpline(uvec,wav,(data_car[:,3:84] *
+                                    (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
+        silfe_i = RectBivariateSpline(uvec,wav,(data_silfe[:,3:84] *
+                                    (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
                                             
-        sil_p = interpolate.RectBivariateSpline(uvec,wav,(data_sil[:,84:165]*
-                                        (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
-        car_p = interpolate.RectBivariateSpline(uvec,wav,(data_car[:,84:165]*
-                                        (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
-        silfe_p = interpolate.RectBivariateSpline(uvec,wav,(data_silfe[:,84:165]*
-                                        (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
+        sil_p = RectBivariateSpline(uvec,wav,(data_sil[:,84:165] *
+                                    (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
+        car_p = RectBivariateSpline(uvec,wav,(data_car[:,84:165] *
+                                    (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
+        silfe_p = RectBivariateSpline(uvec,wav,(data_silfe[:,84:165] *
+                                    (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
         
         # Store inside object
         self.dust_interp = (car_i, sil_i, silfe_i, car_p, sil_p, silfe_p)
