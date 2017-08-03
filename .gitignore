@@ -3,3 +3,7 @@
 *.tar.gz
 .DS_Store
 output/*
+/allsky/output_serial/
+/allsky/output/
+/allsky/fig/
+/allsky/repository/

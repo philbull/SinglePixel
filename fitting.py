@@ -15,13 +15,13 @@ def ln_prior(pvals, models):
         'dust_beta':    (1.4, 1.8),
         'sync_beta':    (-1.6, -0.8),
         'ame_nupeak':   (15., 35.),
-        'gdust_beta':   (1.4, 1.8),
-        'gdust_dbeta':  (-1.5, 1.5),
+        'gdust_beta':   (1.1, 1.8),
+        'gdust_dbeta':  (-1.8, 1.8),
         'gdust_Td1':    (5., 30.),
         'gdust_Td2':    (5., 30.),
-        'gdust_fI':     (0., 1.),
-        'gdust_fQ':     (-2., 2.),
-        'gdust_fU':     (-2., 2.)
+        'gdust_fI':     (0., 1.), 
+        'gdust_fQ':     (-2., 2.), 
+        'gdust_fU':     (-2., 2.),
     }
 
     # Make ordered list of parameter names
@@ -116,7 +116,12 @@ def lnprob_joint(params, data_spec, models_fit, param_spec):
 
         # Calculate scaling with freq. given new parameter values
         amp = np.outer( amps[3*i:3*(i+1)], np.ones(nu.size) ) # Npol*Nfreq array
-
+        
+        # Apply positivity prior on I amplitudes of all components
+        #if m.model == 'ame':
+        if np.any(amp[0] < 0.):
+            return -np.inf
+        
         # Add to model prediction of data vector
         mdata += (amp * m.scaling(nu, params=mparams)).flatten()
 
@@ -227,16 +232,6 @@ def mcmc(data_spec, models_fit, param_spec, nwalkers=50,
 
     # Summary statistics for fitted parameters
     params_out = np.median(param_samples, axis=0)
-
-    #import pylab as P
-    #P.plot(amp_samples[:,0])
-    #P.show()
-    #exit()
-#Muted these for now..
-    # print amp_samples.shape
-    # print "Mean amps =", np.mean(amp_samples, axis=0)
-    # print "std(I) =", np.std(amp_samples[:,0]), np.std(amp_samples[:,0]) / 50.
-    # print "Measured BIAS:", ( np.mean(amp_samples[:,0]) - 50. ) / np.std(amp_samples[:,0])
 
     # Return summary statistics and samples
     return params_out, pnames, samples
@@ -353,8 +348,9 @@ def noise_model(fname="data/noise_coreplus_extended.dat", scale=1.):
     return lambda freq: np.exp(_interp(freq))
 
 
-def generate_data(nu, fsigma_T, fsigma_P, components,
-                  noise_file="data/core_plus_extended_noise.dat"):
+def generate_data(nu, fsigma_T, fsigma_P, components, 
+                  noise_file="data/core_plus_extended_noise.dat",
+                  idx_px = 0):
     """
     Create a mock data vector from a given set of models, including adding a
     noise realization.
@@ -363,9 +359,14 @@ def generate_data(nu, fsigma_T, fsigma_P, components,
     # the signal at a given frequency (should be in uK_CMB)
     signal = 0
     cmb_signal = 0
+    
+    # Disabled for the case of the allsky    
+    if idx_px == 0:
+        print("fitting.py: Parameters in the input model:")
+        
     for comp in components:
-        #print comp.param_names
-
+        if idx_px == 0: print(comp.param_names)
+        
         # Add this component to total signal
         signal += np.atleast_2d(comp.amps()).T * comp.scaling(nu)
 
@@ -395,7 +396,6 @@ def generate_data(nu, fsigma_T, fsigma_P, components,
 
     # Add noise to generated data
     D_vec += n_vec
-    #print n_vec/D_vec
     return D_vec, Ninv
 
 

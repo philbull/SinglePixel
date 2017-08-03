@@ -1,12 +1,12 @@
 #!/usr/bin/python
 """
-Do MCMC runs to fit FG models to simulated data, over a grid of 
+Do serial MCMC runs to fit FG models to simulated data, over a grid of 
 (nu_min, nu_max) values.
 """
 import numpy as np
 import models
-import model_values_allsky
-import model_list_allsky
+import model_values_allsky_serial
+import model_list_allsky_serial
 import fitting
 from utils import rj2cmb, bands_log
 import sys, time, os, copy
@@ -14,19 +14,10 @@ import healpy as hp
 
 import pdb
 
-#from multiprocessing import Pool
-##from mpi4py import MPI
-
-# Set-up MPI
-##comm = MPI.COMM_WORLD
-##myid = comm.Get_rank()
-##nproc = comm.Get_size()
-## (Sergi) PS: If MPI gets used at the top level of sending independent single pixel jobs, one should deal with the map results I/O in process 0
-
 # Prefix for output files
 PREFIX = "final"
-NBURN = 50 #500
-NSTEPS = 25 #10000
+NBURN = 50 # 500 # 50 (tests)
+NSTEPS = 25 # 10000 # 25 (tests)
 NWALKERS = 100
 
 # Reference noise curve (assumes noise file contains sigma_P=sigma_Q=sigma_U 
@@ -48,7 +39,7 @@ np.random.seed(SEED)
 # Lists of input and output models
 in_list = ['cmb', ]; fit_list = ['cmb', ]
 # Defaut list of allowed models
-allowed_comps = model_list_allsky.model_dict() 
+allowed_comps = model_list_allsky_serial.model_dict() 
 # Parse args to define input and output models
 if len(sys.argv) > 2:
     # Removing any white spaces and creating a list
@@ -78,18 +69,18 @@ name_fit = "-".join(fit_list)
 # Getting the Nside and pixel number (ring scheme will be followed, as it is the default ordering scheme in Python)
 if len( sys.argv ) > 4:
     if len( sys.argv ) != 6: 
-        sys.exit( '(run_joint_mcmc_allsky) Provide Nside *and* a pixel number. Exiting.' )
+        sys.exit( '(run_joint_mcmc_allsky_serial) Provide Nside *and* a pixel number. Exiting.' )
     Nside = int( sys.argv[ 4 ] )
     Npix = int( sys.argv[ 5 ] )
     if ( Npix >= 12 * Nside * Nside ):
-        sys.exit( '(run_joint_mcmc_allsky) Pixel number exceeds 12*Nside*Nside. Exiting' )
+        sys.exit( '(run_joint_mcmc_allsky_serial) Pixel number exceeds 12*Nside*Nside. Exiting' )
 else:
     Nside = 8 
     Npix = 0
 
 # Define input models and their amplitudes/parameters
-allowed_comps = model_list_allsky.model_dict( fg_dict = model_values_allsky.get_dict( in_list, Nside, Npix ) ) 
-cmb_model = model_list_allsky.cmb_model()
+allowed_comps = model_list_allsky_serial.model_dict( fg_dict = model_values_allsky_serial.get_dict( in_list, Nside, Npix ) ) 
+cmb_model = model_list_allsky_serial.cmb_model()
 
 # Frequency ranges
 numin_vals = [ 15. ] #[15., 20., 25., 30., 35., 40.]
@@ -100,10 +91,14 @@ fsigma_T = 1. / np.sqrt(2.)
 fsigma_P = 1.
 
 # Collect components into lists and set input amplitudes
-mods_in = [allowed_comps[comp] for comp in in_list]
-mods_fit = [allowed_comps[comp] for comp in fit_list]
-amps_in = np.array([m.amps() for m in mods_in])
-params_in = np.array([m.params() for m in mods_in])
+mods_in = [ allowed_comps[ comp ] for comp in in_list ]
+mods_fit = [ allowed_comps[ comp ] for comp in fit_list ]
+amps_in = np.array( [ m.amps() for m in mods_in ] )
+params_in = np.array( [ m.params() for m in mods_in ] )
+# This is helpful when creating the map where the results will be stored
+amps_fit = np.array( [ m.amps() for m in mods_fit ] )
+params_fit = np.array( [ m.params() for m in mods_fit ] )
+
 
 # Expand into all combinations of nu_min,max
 nu_min, nu_max = np.meshgrid(numin_vals, numax_vals)
@@ -111,7 +106,7 @@ nu_params = np.column_stack((nu_min.flatten(), nu_max.flatten()))
 
 # Prepare output files for writing
 # Create the directory if it does not exist
-out_dir = 'output'
+out_dir = 'output_serial'
 if not os.path.exists( out_dir ):
     os.makedirs( out_dir ) # PS: one could use exist_ok in python v3.7
 
@@ -179,10 +174,11 @@ def run_model(nu_params, Nside, Npix):
 
     ## Number of maps
     n_maps = 0
-    for ii in range( len( amps_in ) ):
-        n_maps += len( amps_in[ ii ] )
-    for jj in range( len( params_in ) ):
-        n_maps += len( params_in[ jj ] )
+    for ii in range( len( amps_fit ) ):
+        n_maps += len( amps_fit[ ii ] )
+    for jj in range( len( params_fit ) ):
+        n_maps += len( params_fit[ jj ] )
+
     ## For each amplitude & parameter, we store 3 results: in/out/err
     n_maps *= 3
     if os.path.isfile( filename + '.fits' ) == 1:
@@ -192,7 +188,7 @@ def run_model(nu_params, Nside, Npix):
         s_tmp = 0 ;
         for i in range( n_maps ): s_tmp += np.abs( data_ini[ i ][ Npix ] )
         if s_tmp < np.abs( hp.UNSEEN ): 
-            print '(run_joint_mcmc_allsky) Pixel %i already analyzed. Skipping it.' % ( Npix )
+            print '(run_joint_mcmc_allsky_serial) Pixel %i already analyzed. Skipping it.' % ( Npix )
             return
     # creare the output file if it does not exist
     if os.path.isfile( filename + '.fits' ) != 1:
@@ -210,7 +206,7 @@ def run_model(nu_params, Nside, Npix):
     my_mods_fit = mods_fit
     
     # Name of sample file
-    #fname_samples = "output/%s_samples_%s.%s_nb%d_seed%d_%s.dat" \
+    #fname_samples = "output_serial/%s_samples_%s.%s_nb%d_seed%d_%s.dat" \
     #              % (PREFIX, name_in, name_fit, nbands, SEED, label)
     fname_samples = None
     
@@ -264,7 +260,7 @@ def run_model(nu_params, Nside, Npix):
             print "%14s: %+3.3e %+3.3e +/- %3.3e [Delta = %+3.3f]" \
                   % (pnames[i], ini[ i ], stats[ 0 ], stats[ 1 ], stats[ 2 ] )
 
-        # Insert the results (each pixel writes a unique location, but remember the comment at the top if MPI gets used for all pixels) 
+        # Insert the results
         data_maps = hp.read_map( filename + '.fits', range( len( pnames ) * 3 ), verbose = False )
         for i_tmp in range( len( pnames) ): 
            for i_tmp_2 in range( 3 ): data_maps[ i_tmp * 3 + i_tmp_2 ][ Npix ] = data_fits[ i_tmp ][ i_tmp_2 ]

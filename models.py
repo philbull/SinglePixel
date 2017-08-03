@@ -300,33 +300,26 @@ class DustHD(DustModel):
         Initialize HD dust model interpolation fns using precomputed data.
         """
         # Read in precomputed dust emission spectra as a fn. of lambda and U
-        data_sil = np.genfromtxt("data/sil_DH16_Fe_00_2.0.dat")
-        data_silfe = np.genfromtxt("data/sil_DH16_Fe_05_2.0.dat")
-        data_cion = np.genfromtxt("data/cion_1.0.dat")
-        data_cneu = np.genfromtxt("data/cneu_1.0.dat")
-        
-        wav = data_sil[:,0] # Wavelength
-        uvec = np.linspace(-0.5, 0.5, num=11, endpoint=True)
-        
-        # Construct splines over wavelength and U
-        sil_i = RectBivariateSpline(uvec, wav, 
-                    ( (data_sil[:,4:15]/(9.744e-27)) \
-                    * (wav[:,np.newaxis]*1.e-4/c)*1.e23).T ) # to Jy
-        car_i = RectBivariateSpline(uvec, wav, 
-                    ( ((data_cion[:,4:15] + data_cneu[:,4:15])/(2.303e-27)) \
-                    * (wav[:,np.newaxis]*1.e-4/c)*1.e23).T ) # to Jy
-        silfe_i = RectBivariateSpline(uvec, wav, 
-                    ( (data_silfe[:,4:15]/(9.744e-27)) \
-                    * (wav[:,np.newaxis]*1.e-4/c)*1.e23).T ) # to Jy
-        sil_p = RectBivariateSpline(uvec, wav, 
-                    ( (data_sil[:,15:26]/(9.744e-27)) \
-                    * (wav[:,np.newaxis]*1.e-4/c)*1.e23).T ) # to Jy
-        car_p = RectBivariateSpline(uvec, wav, 
-                    ( ((data_cion[:,15:26] + data_cneu[:,4:15])/(2.303e-27)) \
-                     * (wav[:,np.newaxis]*1.e-4/c)*1.e23).T ) # to Jy
-        silfe_p = RectBivariateSpline(uvec, wav, 
-                    ( (data_silfe[:,15:26]/(9.744e-27)) \
-                     * (wav[:,np.newaxis]*1.e-4/c)*1.e23).T ) # to Jy
+        data_sil = np.genfromtxt("data/sil_fe00_2.0.dat")
+        data_silfe = np.genfromtxt("data/sil_fe05_2.0.dat")
+        data_car = np.genfromtxt("data/car_1.0.dat")
+
+        wav = data_sil[:,0]
+        uvec = np.arange(-3.,5.01,0.1)
+        # Units of Jy/sr/H
+        sil_i = interpolate.RectBivariateSpline(uvec,wav,(data_sil[:,3:84]*
+                                        (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
+        car_i = interpolate.RectBivariateSpline(uvec,wav,(data_car[:,3:84]*
+                                        (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
+        silfe_i = interpolate.RectBivariateSpline(uvec,wav,(data_silfe[:,3:84]*
+                                        (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
+                                            
+        sil_p = interpolate.RectBivariateSpline(uvec,wav,(data_sil[:,84:165]*
+                                        (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
+        car_p = interpolate.RectBivariateSpline(uvec,wav,(data_car[:,84:165]*
+                                        (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
+        silfe_p = interpolate.RectBivariateSpline(uvec,wav,(data_silfe[:,84:165]*
+                                        (wav[:,np.newaxis]*1.e-4/c)*1.e23).T)
         
         # Store inside object
         self.dust_interp = (car_i, sil_i, silfe_i, car_p, sil_p, silfe_p)
