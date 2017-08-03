@@ -13,11 +13,9 @@ def ln_prior(pvals, models):
     priors = {
         'dust_T':       (16., 24.),
         'dust_beta':    (1.4, 1.8),
-        'sync_beta':    (-3.6, -2.8),
+        'sync_beta':    (-1.6, -0.8),
         'ame_nupeak':   (15., 35.),
-        #'gdust_beta':   (1.4, 1.8),
         'gdust_beta':   (1.1, 1.8),
-        #'gdust_dbeta':  (-1.5, 1.5),
         'gdust_dbeta':  (-1.8, 1.8),
         'gdust_Td1':    (5., 30.),
         'gdust_Td2':    (5., 30.),
