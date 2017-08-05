@@ -212,28 +212,34 @@ def run_model(nu_params, filename, cut_range):
         else:
             np.savetxt(f, np.atleast_2d(summary_data), header=header[:-1])
         f.close()
-    
-    
-# Loop over noise realisations (different random seed each time)
+
+
+# Prep output files for writing
 for j in range(len(seeds)):
-    
-    # Set random seed
-    seed = seeds[j]
-    print "SEED =", seed
-    np.random.seed(seed)
-
-    # Expand into all combinations of nu_min,max
-    nu_min, nu_max = np.meshgrid(numin_vals, numax_vals)
-    nu_params = np.column_stack((nu_min.flatten(), nu_max.flatten()))
-
-    # Prepare output files for writing (
     filename = "output/%s_summary_%s.%s_nb%d_seed%d" \
-                 % (PREFIX, name_in, name_fit, nbands, seed)
+                 % (PREFIX, name_in, name_fit, nbands, seeds[j])
     cut_range = np.arange(NSTEPS, step=200)
     for cut in cut_range:
         fname = filename + "_cut%d.dat" % cut
         f = open(fname, 'w')
         f.close()
+
+
+# Loop over noise realisations (different random seed each time)
+for j in range(len(seeds)):
+
+    # Expand into all combinations of nu_min,max
+    nu_min, nu_max = np.meshgrid(numin_vals, numax_vals)
+    nu_params = np.column_stack((nu_min.flatten(), nu_max.flatten()))
+    
+    # Set random seed
+    seed = seeds[j]
+    print "SEED =", seed
+    np.random.seed(myid*1000 + seed)
+    
+    # Build filename for this seed
+    filename = "output/%s_summary_%s.%s_nb%d_seed%d" \
+                 % (PREFIX, name_in, name_fit, nbands, seeds[j])
     
     # Loop over all band specs and run MCMC
     for i in range(len(nu_params)):
@@ -241,5 +247,5 @@ for j in range(len(seeds)):
         if k % nproc != myid: continue
         
         # Run the model for this set of params
-        run_model(nu_params[i], filename, cut_range)        
-
+        run_model(nu_params[i], filename, cut_range)
+        
