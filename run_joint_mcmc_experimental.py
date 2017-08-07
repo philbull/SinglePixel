@@ -10,14 +10,12 @@ import fitting
 from utils import rj2cmb, bands_log
 import sys, time, os, copy
 
-def main(SEED):
-    #Set Seed
-    if len(sys.argv) > 1:
-        SEED = int(sys.argv[1])
-    print "SEED =", SEED
+def main(SEED, fQval):
+    # Set Seed
+    print "\tseed = %d, fQ = %3.3f" % (SEED, fQval)
     np.random.seed(SEED)
 
-    PREFIX = "final"
+    PREFIX = "fqvals"
     NBURN =  10
     NSTEPS = 10000
     NWALKERS = 100
@@ -39,8 +37,8 @@ def main(SEED):
     # Define input models and their amplitudes/parameters
     allowed_comps = model_list_experimental.model_dict
     cmb_model = model_list_experimental.cmb_model
-
-# Parse args to define input and output models
+    
+    # Parse args to define input and output models
     # if len(sys.argv) > 2:
     #     in_list += sys.argv[2].split(",")
     #     fit_list += sys.argv[3].split(",")
@@ -81,9 +79,10 @@ def main(SEED):
     nu_params = np.column_stack((nu_min.flatten(), nu_max.flatten()))
 
     # Prepare output files for writing
-    filename = "output/%s_summary_%s.%s_nb%d_seed%d" \
-                 % (PREFIX, name_in, name_fit, nbands, SEED)
-    cut_range = np.arange(NSTEPS, step=200)
+    filename = "output/%s_summary_%s.%s_nb%d_fQ%3.3f_seed%04d" \
+                 % (PREFIX, name_in, name_fit, nbands, fQval, SEED)
+    
+    cut_range = np.arange(NSTEPS, step=500)
     for cut in cut_range:
         fname = filename + "_cut%d.dat" % cut
         f = open(fname, 'w')
