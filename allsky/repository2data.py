@@ -10,7 +10,7 @@ import pdb
 
 def main( Nside = 32, plot = 0 ):
     
-    # Synchrotron: ***data are in micro K_RJ***
+    # Synchrotron: ***public data are in micro K_RJ***
     ## Opening the data from Planck (Commander)
     ### Intensity is given at the reference frequency of 408 MHz
     sync_I = hp.read_map( "repository/COM_CompMap_Synchrotron-commander_0256_R2.00.fits", hdu = 1, field = 0 )
@@ -57,7 +57,7 @@ def main( Nside = 32, plot = 0 ):
     hp.write_map( filename, ff_out )
 
 
-    # Dust: ***data are given in micro K_RJ***
+    # Dust: ***public data are given in micro K_RJ***
     ## Opening the data from Planck (Commander)
     ### Temperature is given at the reference frequency of 545 GHz
     dust_I = hp.read_map( "repository/COM_CompMap_dust-commander_0256_R2.00.fits", hdu = 1, field = 0 ) 
