@@ -12,7 +12,6 @@ import run_joint_mcmc_experimental as mc
 import bias_calc_2 as bias
 import model_list_experimental as ml
 from utils import *
-import matplotlib.pyplot as plt
 import plot_cloud_model as cloudplot
 from mpi4py import MPI
 
