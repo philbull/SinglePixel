@@ -31,7 +31,7 @@ counter = 1
 seed_list = np.arange(mcmc_iterations)
 index = np.argwhere(np.arange(-50, 51, 1) == -10)
 fQ_array = np.delete(np.arange(-50, 51, 1), index)/10.0 #Removes fQ = -1 from the list, which would otherwise raise a divide by zero error.
-
+#fQ_array = np.array([-5.0, -4.0, -3.0])
 
 
 #Appends new parameters to modify_parameters.txt
@@ -52,7 +52,7 @@ def mean_bias(T):
         print str(counter) + "/" + str(mcmc_iterations*len(fQ_array))
         run_seed = seed_list[i]
         mc.main(run_seed)
-        temp = bias.bias_array(run_seed)
+        temp = bias.bias_array(run_seed) #OPTIONAL CUT PARAMETER FOR WHEN STEPS < 200
 
         run_I_bias.append(temp[0])
         run_Q_bias.append(temp[1])
