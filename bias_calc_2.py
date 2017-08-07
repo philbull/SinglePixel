@@ -8,7 +8,7 @@ def bias_array(current_seed, cut = 5000):
     # cmb_I_Chain_Values = spectral_data.T[0]
     # cmb_Q_Chain_Values = spectral_data.T[1]
     # cmb_U_Chain_Values = spectral_data.T[2]
-    file_name = 'output/final_summary_cmb-synch-2mbb_cloud.cmb-synch-mbb_nb7_seed%d_cut' %current_seed + str(cut) + '.dat'
+    file_name = 'output/fqvals_summary_cmb-synch-2mbb_cloud.cmb-synch-mbb_nb7_seed%04d_cut' %current_seed + str(cut) + '.dat'
     #print file_name
     summary_stat_data = np.loadtxt(file_name)
 
