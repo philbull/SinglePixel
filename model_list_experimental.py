@@ -7,6 +7,7 @@ from utils import rj2cmb
 DUST_I = 50.
 DUST_P = 5. / 1.41
 
+"""
 #Define parameters using modify_parameters.txt:
 params_file = open('modify_parameters.txt','r')
 lineList = params_file.readlines()
@@ -32,7 +33,8 @@ TCCM_fI    = TCCM_Parameters[7]
 TCCM_fQ    = TCCM_Parameters[8]
 TCCM_fU    = TCCM_Parameters[9]
 
-two_comp_cloud_model = models.DustGen(TCCM_amp_I, TCCM_amp_Q, TCCM_amp_U, TCCM_beta, TCCM_dbeta, TCCM_Td1, TCCM_Td2, TCCM_fI, TCCM_fQ, TCCM_fU)
+#two_comp_cloud_model = models.DustGen(TCCM_amp_I, TCCM_amp_Q, TCCM_amp_U, TCCM_beta, TCCM_dbeta, TCCM_Td1, TCCM_Td2, TCCM_fI, TCCM_fQ, TCCM_fU)
+"""
 
 #Default TCCM params:
 #two_comp_cloud_model = models.DustGen(rj2cmb(353e9, DUST_I/2.), rj2cmb(353e9, DUST_P/2.1), rj2cmb(353e9, DUST_P/1.8) ,1.6,0.0,20.0,15.0,1.0,1.1,0.8)

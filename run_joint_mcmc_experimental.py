@@ -10,15 +10,18 @@ import fitting
 from utils import rj2cmb, bands_log
 import sys, time, os, copy
 
-def main(SEED, fQval):
+def main(SEED, fQval, fI=1., fU=0.8):
     # Set Seed
     print "\tseed = %d, fQ = %3.3f" % (SEED, fQval)
     np.random.seed(SEED)
 
-    PREFIX = "fqvals"
+    PREFIX = "newfqvals"
     NBURN =  10
     NSTEPS = 10000
     NWALKERS = 100
+    
+    DUST_I = 50.
+    DUST_P = 10. / 1.41
 
     # Reference noise curve (assumes noise file contains sigma_P=sigma_Q=sigma_U
     # in uK_CMB.deg for a given experiment)
@@ -32,7 +35,7 @@ def main(SEED, fQval):
     # Lists of input and output models
     #in_list = ['cmb', ]; fit_list = ['cmb', ]
     fit_list = ['cmb', 'synch', 'mbb']
-    in_list = ['cmb', 'synch', '2mbb_cloud']
+    in_list = ['cmb', 'synch',]
 
     # Define input models and their amplitudes/parameters
     allowed_comps = model_list_experimental.model_dict
@@ -59,6 +62,7 @@ def main(SEED, fQval):
     #print "Fitting components:", fit_list
     name_in = "-".join(in_list)
     name_fit = "-".join(fit_list)
+    name_in += "-2mbb_cloud"
 
     # Frequency ranges
     numin_vals = [30.]
@@ -67,9 +71,18 @@ def main(SEED, fQval):
     # Temperature/polarisation noise rms for all bands, as a fraction of T_cmb
     fsigma_T = 1. / np.sqrt(2.)
     fsigma_P = 1.
+    
+    # Instantiate specified cloud model
+    two_comp_cloud_model = models.DustGen(
+                                    rj2cmb(353e9, DUST_I/(1+fI)), 
+                                    rj2cmb(353e9, DUST_P/(1+fQval)), 
+                                    rj2cmb(353e9, DUST_P/(1+fU)), 
+                                    1.6, 0.0, 20, 15.0, 1.0, 
+                                    fQval, 0.8 )
 
     # Collect components into lists and set input amplitudes
     mods_in = [allowed_comps[comp] for comp in in_list]
+    mods_in.append(two_comp_cloud_model)
     mods_fit = [allowed_comps[comp] for comp in fit_list]
     amps_in = np.array([m.amps() for m in mods_in])
     params_in = np.array([m.params() for m in mods_in])

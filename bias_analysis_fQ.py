@@ -12,8 +12,15 @@ import run_joint_mcmc_experimental as mc
 import bias_calc_2 as bias
 import model_list_experimental as ml
 from utils import *
-import matplotlib.pyplot as plt
-import plot_cloud_model as cloudplot
+#import matplotlib.pyplot as plt
+#import plot_cloud_model as cloudplot
+
+from mpi4py import MPI
+
+# Set-up MPI
+comm = MPI.COMM_WORLD
+myid = comm.Get_rank()
+nproc = comm.Get_size()
 
 #TCCM Parameter List: amp_I, amp_Q, amp_U, beta, dbeta, Td1, Td2, fI, fQ, fU
 #Default TCCM Parameters = (rj2cmb(353e9, DUST_I/(1+fI)), rj2cmb(353e9, DUST_P/(1+fQ)), rj2cmb(353e9, DUST_P/(1+fU)), 1.6, 0.0, 20, 15.0, 1.0, 1.1, 0.8)
@@ -22,18 +29,20 @@ import plot_cloud_model as cloudplot
 #Default MBB Parameters = (rj2cmb(353e9, DUST_I), rj2cmb(353e9, DUST_P), rj2cmb(353e9, DUST_P), 1.6, 20.)
 
 #Constants
-DUST_I = 50.
-DUST_P = 10. / 1.41
+#DUST_I = 50. # now defined in run_joint_mcmc_experimental.py
+#DUST_P = 10. / 1.41
 mcmc_iterations = 100
 counter = 1
 
 #Standard Arrays
 seed_list = np.arange(mcmc_iterations)
-index = np.argwhere(np.arange(-50, 51, 1) == -10)
-fQ_array = np.delete(np.arange(-50, 51, 1), index)/10.0 #Removes fQ = -1 from the list, which would otherwise raise a divide by zero error.
+#index = np.argwhere(np.arange(-50, 51, 1) == -10)
+#fQ_array = np.delete(np.arange(-50, 51, 1), index)/10.0 #Removes fQ = -1 from the list, which would otherwise raise a divide by zero error.
 #fQ_array = np.array([-5.0, -4.0, -3.0])
+fQ_array = np.linspace(-5., 5., 30)
+fQ_array[np.where(fQ_array == -1.)] = -0.95
 
-
+"""
 #Appends new parameters to modify_parameters.txt
 def set_fQ_params_TCCM(fQ, fI = 1.0 , fU = 0.8):
     with open('modify_parameters.txt', 'a') as param_file:
@@ -76,8 +85,35 @@ for T in fQ_array:                             #For specified fQ values:
     main_Q_biases.append(mean_run_biases[1])
     main_U_biases.append(mean_run_biases[2])
 
+"""
 
 
+# Construct list of fQ values and seeds to loop over
+seeds, fqvals = np.meshgrid(seed_list, fQ_array)
+seeds = seeds.flatten()
+fqvals = fqvals.flatten()
+
+# Loop over seeds and fQ values, assigning to MPI workers in turn
+# (will do all seeds for 1 fQ value first)
+for i in range(fqvals.size):
+    if i % nproc != myid: continue
+    print "-"*50
+    print "Running %d / %d (worker %d)" % (i, fqvals.size, myid)
+    print "-"*50
+    mc.main(seeds[i], fqvals[i])
+
+# Finish MPI process
+comm.Barrier()
+
+
+
+
+
+
+
+
+
+"""
 plt.figure(figsize=(16,9))
 plt.suptitle('Mean Bias in CMB Polarization Parameters vs. $f_{Q}$'
             + "\n" + "Remaining TCCM Parameters Default"
@@ -114,3 +150,4 @@ cloudplot.wrapper(fQ_array)
 plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.5, hspace=0.5)
 plt.savefig("figures/Two_Cloud_to_MBBModel_" + str(len(fQ_array)) + "_fQ_Values_" + str(mcmc_iterations) + "_MCMC_Iterations")
 plt.show()
+"""
