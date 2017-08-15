@@ -1,6 +1,7 @@
 *.pyc
 *.png
 *.tar.gz
+*.pdf
 /output/
 /allsky/output_serial/
 /allsky/output/
