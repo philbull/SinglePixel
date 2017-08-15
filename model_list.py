@@ -32,7 +32,10 @@ ff_model = models.FreeFreeUnpol( amp_I=rj2cmb(30e9, 30.),
                                  amp_U=rj2cmb(30e9, 0.), 
                                  ff_beta=-0.118 )
 
-sync_model = models.SyncPow( amp_I=30., amp_Q=10., amp_U=10., sync_beta=-1.2 )
+sync_model = models.SyncPow( amp_I=rj2cmb(30e9, 30.), 
+                             amp_Q=rj2cmb(30e9, 10.), 
+                             amp_U=rj2cmb(30e9, 10.), 
+                             sync_beta=-1.2 )
 
 cmb_model = models.CMB( amp_I=50., amp_Q=0.6, amp_U=0.6 )
 

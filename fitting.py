@@ -233,16 +233,6 @@ def mcmc(data_spec, models_fit, param_spec, nwalkers=50,
     # Summary statistics for fitted parameters
     params_out = np.median(param_samples, axis=0)
     
-    #import pylab as P
-    #P.plot(amp_samples[:,0])
-    #P.show()
-    #exit()
-    
-    print amp_samples.shape
-    print "Mean amps =", np.mean(amp_samples, axis=0)
-    print "std(I) =", np.std(amp_samples[:,0]), np.std(amp_samples[:,0]) / 50.
-    print "Measured BIAS:", ( np.mean(amp_samples[:,0]) - 50. ) / np.std(amp_samples[:,0])
-    
     # Return summary statistics and samples
     return params_out, pnames, samples
 
@@ -278,11 +268,11 @@ def joint_mcmc(data_spec, models_fit, param_spec, nwalkers=100,
                                      threads=nthreads )
     sampler.run_mcmc(pos, burn + steps)
     
-    # Recover log(posterior)
-    logp = sampler.lnprobability
-    
     # Recover samples of spectral parameters and amplitudes
     samples = sampler.chain[:, burn:, :].reshape((-1, ndim))
+    
+    # Recover log(posterior)
+    logp = sampler.lnprobability[:,burn:].reshape((-1,))
     
     # Save chains to file
     if sample_file is not None:

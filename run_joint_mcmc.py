@@ -18,7 +18,7 @@ myid = comm.Get_rank()
 nproc = comm.Get_size()
 
 # Prefix for output files
-PREFIX = "final"
+PREFIX = "paper01"
 NBURN = 500
 NSTEPS = 10000
 NWALKERS = 100
@@ -69,11 +69,13 @@ name_in = "-".join(in_list)
 name_fit = "-".join(fit_list)
 
 # Frequency ranges
-numin_vals = [15., 20., 25., 30., 35., 40.]
+numin_vals = [20., 30., 40.]
 numax_vals = [300., 400., 500., 600., 700., 800.]
+#numin_vals = [20., ]
+#numax_vals = [300., 700.]
 
 # Temperature/polarisation noise rms for all bands, as a fraction of T_cmb
-fsigma_T = 1. / np.sqrt(2.)
+fsigma_T = 1e4 #1. / np.sqrt(2.)
 fsigma_P = 1.
 
 # Collect components into lists and set input amplitudes
@@ -176,40 +178,50 @@ def run_model(nu_params):
     chisq = -2.*logp
     dof = D_vec.size - len(pnames)
     
+    # Get best-fit (max. prob.) parameter values
+    maxl_idx = np.argmax(logp)
+    bf_params = samples[:, maxl_idx]
+    
+    
     # Reshape sample array into (Nparams, Nwalkers, Nsamples)
     samples = samples.reshape((samples.shape[0], 
                                NWALKERS, 
                                samples.shape[1]/NWALKERS))
     
-    
     # Loop over different burn-in cuts to produce summary stats
-    for cut in cut_range:
+    for n, cut in enumerate(cut_range):
         
         # Set output filename
         fname = filename + "_cut%d.dat" % cut
         
         # Output mean and bias
-        summary_str = "%4.4e %4.4e %4.4e " % (nu_min, nu_max, np.min(chisq))
-        summary_data = [nu_min, nu_max, np.min(chisq)]
-        header = "nu_min nu_max chi2_min "
+        summary_data = [nu_min, nu_max, np.min(chisq), maxl_idx]
+        header = "nu_min nu_max chi2_min maxlike_idx "
         
         # Loop over parameter names
         for i in range(len(pnames)):
             
-            # Mean, std. dev., and fractional shift from true value
+            # Mean, std. dev., and fractional shift from true value 
+            # (for mean, median, and max. likelihood param values)
             _mean = np.mean(samples[i,:,cut:])
             _std = np.std(samples[i,:,cut:])
             _fracbias = (np.mean(samples[i,:,cut:]) - ini[i]) \
                       / np.std(samples[i,:,cut:])
-            stats = [_mean, _std, _fracbias]
+            _fracbias = (np.median(samples[i,:,cut:]) - ini[i]) \
+                      / np.std(samples[i,:,cut:])
+            _ml_fracbias = (bf_params[i] - ini[i]) / np.std(samples[i,:,cut:])
+            
+            stats = [_mean, _std, _fracbias, _med_fracbias, _ml_fracbias]
             
             # Keep summary stats, to be written to file
             summary_data += stats
-            header += "mean_%s std_%s Delta_%s " \
-                    % (pnames[i], pnames[i], pnames[i])
+            header += "mean_%s std_%s Delta_%s MedDelta_%s MLDelta_%s " \
+                    % (pnames[i], pnames[i], pnames[i], pnames[i], pnames[i])
             
-            print "%14s: %+3.3e +/- %3.3e [Delta = %+3.3f]" \
-                  % (pnames[i], stats[0], stats[1], stats[2])
+            # Only output summary stats once
+            if n == 0:
+                print "%14s: %+3.3e +/- %3.3e [Delta = %+3.3f, MLDelta = %+3.3f]" \
+                      % (pnames[i], stats[0], stats[1], stats[2], stats[3])
         
         # If file is empty, set flag to write header when saving output
         has_header = False if os.stat(fname).st_size == 0 else True
