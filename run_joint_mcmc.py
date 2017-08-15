@@ -207,8 +207,8 @@ def run_model(nu_params):
             _std = np.std(samples[i,:,cut:])
             _fracbias = (np.mean(samples[i,:,cut:]) - ini[i]) \
                       / np.std(samples[i,:,cut:])
-            _fracbias = (np.median(samples[i,:,cut:]) - ini[i]) \
-                      / np.std(samples[i,:,cut:])
+            _med_fracbias = (np.median(samples[i,:,cut:]) - ini[i]) \
+                          / np.std(samples[i,:,cut:])
             _ml_fracbias = (bf_params[i] - ini[i]) / np.std(samples[i,:,cut:])
             
             stats = [_mean, _std, _fracbias, _med_fracbias, _ml_fracbias]
