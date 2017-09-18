@@ -132,6 +132,47 @@ class DustGenMBB(DustGen):
             params = np.concatenate((params, [params[-1],]))
         return super(DustGenMBB, self).scaling(nu, params)
 
+
+class DustGenMBBDepol(DustGen):
+    def __init__(self, *args, **kwargs):
+        """
+        2-component dust model, with fQ != fU, to allow frequency decorrelation 
+        effects to be accounted for.
+        """
+        super(DustGenMBBDepol, self).__init__(*args, **kwargs)
+        self.model = 'genmbbdp'
+        if self.name is None: self.name = "DustGenMBBDepol"
+        
+        # Reference frequency
+        self.nu_ref = 353. * 1e9
+        
+        # List of parameter names
+        self.param_names = [ 'gdust_beta', 'gdust_dbeta', 
+                             'gdust_Td1', 'gdust_Td2',
+                             'gdust_fI', 'gdust_fQ', 'gdust_fU']
+    
+    def params(self):
+        """
+        Return list of parameters.
+        """
+        return np.array([self.beta, self.dbeta, self.Td1, self.Td2, 
+                         self.fI, self.fQ, self.fU])
+    
+    def set_params(self, params):
+        """
+        Set parameters from an array, using the same ordering as the list 
+        returned by self.params().
+        """
+        self.beta, self.dbeta, self.Td1, self.Td2, \
+            self.fI, self.fQ, self.fU = params
+    
+    def scaling(self, nu, params=None):
+        """
+        Return frequency scaling factor at a given frequency.
+        """
+        return super(DustGenMBBDepol, self).scaling(nu, params)
+
+
 #-------------------------------------------------------------------------------
 # Dust models
 #-------------------------------------------------------------------------------

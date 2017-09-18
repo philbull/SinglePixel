@@ -115,6 +115,22 @@ gen_dust_model = models.DustGenMBB( amp_I=rj2cmb(353e9, DUST_I),
                                     amp_Q=rj2cmb(353e9, DUST_P),
                                     amp_U=rj2cmb(353e9, DUST_P) )
 
+# General 2MBB dust model with fQ!=fU
+gen_dust_model_depol = models.DustGenMBBDepol( amp_I=rj2cmb(353e9, DUST_I),
+                                               amp_Q=rj2cmb(353e9, DUST_P),
+                                               amp_U=rj2cmb(353e9, DUST_P) )
+
+# 2MBB dust model with parameters set exactly to the MF15 values
+gen_dust_model_mf15 = models.DustGenMBB( amp_I=rj2cmb(353e9, DUST_I/1.19),
+                                         amp_Q=rj2cmb(353e9, DUST_P/1.19),
+                                         amp_U=rj2cmb(353e9, DUST_P/1.19),
+                                         beta = 1.63,
+                                         dbeta = 1.19,
+                                         Td1 = 9.75,
+                                         Td2 = 15.7,
+                                         fI = 0.19,
+                                         fQ = 0.19 )
+
 # Dictionary of models
 model_dict = {
     'cmb':          cmb_model, 
@@ -125,11 +141,14 @@ model_dict = {
     'shiftedmbb':   simple_dust_model_shifted,
     '2mbb_silcar':  two_comp_silcar_model,
     '2mbb_f99':     two_comp_f99_model,
+    '2mbb_mf15':    two_comp_f99_model,
     '2mbb_cloud':   two_comp_cloud_model,
     '2mbb_fe':      two_comp_fe_model,
     'hd':           hd_model,
     'hd_fe':        hd_fe_model,
     'genmbb':       gen_dust_model,
+    'genmbbdp':     gen_dust_model_depol,
+    'genmbb15':     gen_dust_model_mf15,
     'ame':          ame_model,
 }
 
