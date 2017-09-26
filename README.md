@@ -12,7 +12,7 @@ The following is a list of the scripts that make up SinglePixel:
  * <tt>fitting.py</tt>: Infrastructure for simulating and fitting multi-band frequency spectra.
  * <tt>run_joint_mcmc.py</tt>: Main script for running the simulation/fitting procedure over a grid of models, band specifications, and noise realisations. MPI-enabled.
 
-If you wish to repeat the analysis in the paper, you will find everything you need in run_joint_mcmc.py. Please study the code carefully before running, as the script must be modified in order to set certain parameters. Importantly, if you do not want to generate large amounts of output by storing the raw MCMC samples to disk, make sure that you have set <tt>fname_samples = None</tt> in the <tt>model_test()</tt> function.
+If you wish to repeat the analysis in the paper, you will find everything you need in <tt>run_joint_mcmc.py</tt>. Please study the code carefully before running, as the script must be modified in order to set certain parameters. Importantly, if you do not want to generate large amounts of output by storing the raw MCMC samples to disk, make sure that you have set <tt>fname_samples = None</tt> in the <tt>model_test()</tt> function.
 
 The <tt>run_joint_mcmc.py</tt> script accepts several command line arguments that specify the models to simulate, the models to fit, and the random seed to use. Example usage:
 
