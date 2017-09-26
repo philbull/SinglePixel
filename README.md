@@ -4,7 +4,7 @@ SinglePixel is a code for modelling, simulating, and fitting the frequency spect
 
 ## Code
 
-The code is written entirely in Python, and makes use of the <tt>numpy</tt>, <tt>scipy</tt>, <tt>matplotlib</tt>, <tt>mpi4py</tt>, and <tt>emcee</tt> packages. You can clone it from the <b><a href="https://github.com/philbull/SinglePixel">philbull/SinglePixel</a></b> repository on GitHub. It is available under an open source MIT license, and contributions (e.g. pull requests and bug reports) are welcome. Please cite the paper (arXiv:1709.07897) if you use or modify the code.</p>
+The code is written entirely in Python, and makes use of the <tt>numpy</tt>, <tt>scipy</tt>, <tt>matplotlib</tt>, <tt>mpi4py</tt>, and <tt>emcee</tt> packages. You can clone it from the <b><a href="https://github.com/philbull/SinglePixel">philbull/SinglePixel</a></b> repository on GitHub. It is available under an open source MIT license, and contributions (e.g. pull requests and bug reports) are welcome. Please cite the paper (<a href="https://arxiv.org/abs/1709.07897">arXiv:1709.07897</a>) if you use or modify the code.</p>
 
 The following is a list of the scripts that make up SinglePixel:
  * <tt>models.py</tt>: Python classes that define the various dust models and other foregrounds.
