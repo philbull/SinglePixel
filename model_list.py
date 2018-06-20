@@ -6,42 +6,48 @@ DUST_I = 50.
 DUST_P = 5. / 1.41
 
 # Define input models and their amplitudes/parameters
-dust_model = models.DustMBB( amp_I=rj2cmb(353e9, DUST_I), 
-                             amp_Q=rj2cmb(353e9, DUST_P), 
-                             amp_U=rj2cmb(353e9, DUST_P), 
+dust_model = models.DustMBB( amp_I=rj2cmb(353e9, DUST_I),
+                             amp_Q=rj2cmb(353e9, DUST_P),
+                             amp_U=rj2cmb(353e9, DUST_P),
                              dust_beta=1.6, dust_T=20. )
 
-simple_dust_model = models.DustSimpleMBB( amp_I=rj2cmb(353e9, DUST_I), 
-                             amp_Q=rj2cmb(353e9, DUST_P), 
-                             amp_U=rj2cmb(353e9, DUST_P), 
+prob1mbb_model = models.ProbSingleMBB( amp_I=rj2cmb(353e9, DUST_I),
+                             amp_Q=rj2cmb(353e9, DUST_P),
+                             amp_U=rj2cmb(353e9, DUST_P),
+                             dust_beta=1.6, dust_T=20.,
+                             sigma_beta=.2, sigma_temp=4. )
+
+simple_dust_model = models.DustSimpleMBB( amp_I=rj2cmb(353e9, DUST_I),
+                             amp_Q=rj2cmb(353e9, DUST_P),
+                             amp_U=rj2cmb(353e9, DUST_P),
                              dust_beta=1.6, dust_T=20. )
 
-simple_dust_model_shifted = models.DustSimpleMBB( 
-                             amp_I=rj2cmb(353e9, DUST_I), 
-                             amp_Q=rj2cmb(353e9, DUST_P), 
-                             amp_U=rj2cmb(353e9, DUST_P), 
+simple_dust_model_shifted = models.DustSimpleMBB(
+                             amp_I=rj2cmb(353e9, DUST_I),
+                             amp_Q=rj2cmb(353e9, DUST_P),
+                             amp_U=rj2cmb(353e9, DUST_P),
                              dust_beta=1.7, dust_T=20. )
 
-ame_model = models.AMEModel( amp_I=rj2cmb(30e9, 30.), 
-                             amp_Q=rj2cmb(30e9, 0.), 
-                             amp_U=rj2cmb(30e9, 0.), 
+ame_model = models.AMEModel( amp_I=rj2cmb(30e9, 30.),
+                             amp_Q=rj2cmb(30e9, 0.),
+                             amp_U=rj2cmb(30e9, 0.),
                              nu_peak=25. )
 
-ff_model = models.FreeFreeUnpol( amp_I=rj2cmb(30e9, 30.), 
-                                 amp_Q=rj2cmb(30e9, 0.), 
-                                 amp_U=rj2cmb(30e9, 0.), 
+ff_model = models.FreeFreeUnpol( amp_I=rj2cmb(30e9, 30.),
+                                 amp_Q=rj2cmb(30e9, 0.),
+                                 amp_U=rj2cmb(30e9, 0.),
                                  ff_beta=-0.118 )
 
-sync_model = models.SyncPow( amp_I=rj2cmb(30e9, 30.), 
-                             amp_Q=rj2cmb(30e9, 10.), 
-                             amp_U=rj2cmb(30e9, 10.), 
+sync_model = models.SyncPow( amp_I=rj2cmb(30e9, 30.),
+                             amp_Q=rj2cmb(30e9, 10.),
+                             amp_U=rj2cmb(30e9, 10.),
                              sync_beta=-1.2 )
 
 cmb_model = models.CMB( amp_I=50., amp_Q=0.6, amp_U=0.6 )
 
 
 # Silicate + Carbonaceous grains as 2 MBBs
-two_comp_silcar_model = models.DustGen( 
+two_comp_silcar_model = models.DustGen(
                                      amp_I=rj2cmb(353e9, DUST_I/1.25),
                                      amp_Q=rj2cmb(353e9, DUST_P),
                                      amp_U=rj2cmb(353e9, DUST_P),
@@ -69,7 +75,7 @@ two_comp_f99_model = models.DustGen( amp_I=rj2cmb(353e9, DUST_I/1.19),
 # Dust same composition everywhere, but different temperature
 # Magnetic field structure along the line of sight induces
 # depolarization, i.e. fQ != fU
-two_comp_cloud_model = models.DustGen( 
+two_comp_cloud_model = models.DustGen(
                                      amp_I=rj2cmb(353e9, DUST_I/2.),
                                      amp_Q=rj2cmb(353e9, DUST_P/3.0),
                                      amp_U=rj2cmb(353e9, DUST_P/1.5),
@@ -133,10 +139,10 @@ gen_dust_model_mf15 = models.DustGenMBB( amp_I=rj2cmb(353e9, DUST_I/1.19),
 
 # Dictionary of models
 model_dict = {
-    'cmb':          cmb_model, 
-    'synch':        sync_model, 
+    'cmb':          cmb_model,
+    'synch':        sync_model,
     'freefree':     ff_model,
-    'mbb':          dust_model, 
+    'mbb':          dust_model,
     'simplembb':    simple_dust_model,
     'shiftedmbb':   simple_dust_model_shifted,
     '2mbb_silcar':  two_comp_silcar_model,
@@ -151,4 +157,3 @@ model_dict = {
     'genmbb15':     gen_dust_model_mf15,
     'ame':          ame_model,
 }
-
