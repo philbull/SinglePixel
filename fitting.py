@@ -11,6 +11,8 @@ def ln_prior(pvals, models):
     """
     # Define priors
     priors = {
+        'prob1mbb_Q':   (1., 100.),
+        'prob1mbb_U':   (1., 100.),
         'dust_T':       (16., 24.),
         'dust_beta':    (1.4, 1.8),
         'sync_beta':    (-1.6, -0.8),
@@ -22,6 +24,8 @@ def ln_prior(pvals, models):
         'gdust_fI':     (0., 1.),
         'gdust_fQ':     (-2., 2.),
         'gdust_fU':     (-2., 2.),
+        'sigma_beta':   (.1, 1.),
+        'sigma_temp':   (1., 10.),
     }
 
     # Make ordered list of parameter names
@@ -29,13 +33,11 @@ def ln_prior(pvals, models):
     for m in models:
         pnames += m.param_names
 
-    print pnames
     # Go through priors and apply them
     ln_prior = 0. # Set default prior value
     for pn in priors.keys():
         if pn not in pnames: continue
         pmin, pmax = priors[pn] # Prior bounds
-        print pn, pnames, pvals
         val = pvals[pnames.index(pn)] # Current value of parameter
         if val < pmin or val > pmax:
             ln_prior = -np.inf
@@ -47,6 +49,9 @@ def lnprob(pvals, data_spec, models_fit, param_spec, Ninv_sqrt):
     """
     # Retrieve instrument/data model and parameter info
     nu, D_vec, Ninv, beam_mat = data_spec
+
+    # pnames should be amps_names + param_names
+    # initial_vals should be amps_vals + param_vals
     pnames, initial_vals, parent_model = param_spec
 
     # Apply prior
@@ -363,10 +368,10 @@ def generate_data(nu, fsigma_T, fsigma_P, components,
     cmb_signal = 0
     # Disabled for the case of the allsky
     if idx_px == 0:
-        print( "(FITTING.PY) Parameters in the input model:" )
+        pass #print( "(FITTING.PY) Parameters in the input model:" )
     for comp in components:
         if idx_px == 0:
-            print comp.param_names
+            pass #print comp.param_names
 
         # Add this component to total signal
         signal += np.atleast_2d(comp.amps()).T * comp.scaling(nu)
