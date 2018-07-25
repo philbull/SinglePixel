@@ -24,21 +24,33 @@ def ln_prior(pvals, models):
         'gdust_fI':     (0., 1.),
         'gdust_fQ':     (-2., 2.),
         'gdust_fU':     (-2., 2.),
-        'sigma_beta':   (.1, 1.),
-        'sigma_temp':   (1., 10.),
+        'sigma_beta':   (1e-2, 1.),
+        'sigma_temp':   (.1, 10.),
     }
 
     # Make ordered list of parameter names
-    pnames = []
-    for m in models:
-        pnames += m.param_names
+    param_names = []
+    for mod in models:
+        param_names += mod.param_names
+
+    # Get a list of amplitude names
+    amp_names = []
+    for mod in models:
+        amp_names += ["%s_%s" % (mod.model, pol) for pol in "IQU"]
+
+    pnames = amp_names + param_names
 
     # Go through priors and apply them
     ln_prior = 0. # Set default prior value
     for pn in priors.keys():
+    #    print 'pnames: ' + str(pnames)
+    #    print 'pn: ' + str(pn)
         if pn not in pnames: continue
         pmin, pmax = priors[pn] # Prior bounds
+    #    print 'pmin: ' + str(pmin) + ', pmax: ' + str(pmax)
+    #    print 'pvals: ' + str(pvals)
         val = pvals[pnames.index(pn)] # Current value of parameter
+    #    print 'val: ' + str(val)
         if val < pmin or val > pmax:
             ln_prior = -np.inf
     return ln_prior
@@ -100,7 +112,7 @@ def lnprob_joint(params, data_spec, models_fit, param_spec):
     pvals = params[Nmod*Npol:]
 
     # Apply prior
-    logpr = ln_prior(pvals, models_fit)
+    logpr = ln_prior(params, models_fit)
     if not np.isfinite(logpr):
         return -np.inf
 
@@ -269,6 +281,7 @@ def joint_mcmc(data_spec, models_fit, param_spec, nwalkers=100,
     ndim = len(initial_vals)
     pos = [initial_vals*(1.+1e-3*np.random.randn(ndim)) for i in range(nwalkers)]
 
+    #print param_spec
     # Run emcee sampler
     sampler = emcee.EnsembleSampler( nwalkers, ndim, lnprob_joint,
                                      args=(data_spec, models_fit, param_spec),
