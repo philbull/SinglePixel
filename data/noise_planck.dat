@@ -1,0 +1,10 @@
+# Planck HFI
+# https://arxiv.org/pdf/1502.01587.pdf Table 6
+# Band[GHz], BeamFWHM[arcmin] (labelled 1 in table, see note b4), sigmaQ[uK.deg]
+100   9.68    1.29
+143   7.30    0.55
+217   5.02    0.78
+353   4.94    2.56
+# in units [kJy sr^-1], using interpolation for the time being
+#545   4.83    0.78
+#857   4.64    0.72
