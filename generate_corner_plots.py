@@ -37,14 +37,24 @@ nu_pico = np.asarray([21,25,30, 36.0,43.2,51.8,62.2,74.6,89.6,
                       107.5,129.0,154.8,185.8,222.9,267.5,321.0,
                       385.2,462.2,554.7,665.6,798.7]) * 1e9
 
-models_fit = [control, cmb, sync]
-amp_names = []
-param_names = []
+models_sMBB = [sMBB, cmb, sync]
+models_pMBB_broad = [pMBB_broad, cmb, sync]
+models_pMBB_narrow = [pMBB_narrow, cmb, sync]
 
-for mod in models_fit:
-# Parameter names
-    amp_names += ["%s_%s" % (mod.model, pol) for pol in "IQU"]
-    param_names += mod.param_names
+def make_pnames(models_fit):
+    amp_names = []
+    param_names = []
+
+    for mod in models_fit:
+        # Parameter names
+        amp_names += ["%s_%s" % (mod.model, pol) for pol in "IQU"]
+        param_names += mod.param_names
+
+    return amp_names + param_names
+
+pnames_sMBB = make_pnames(models_sMBB)
+pnames_pMBB_broad = make_pnames(models_pMBB_broad)
+pnames_pMBB_narrow = make_pnames(models_pMBB_narrow)
 
 fsigma_T=1e3
 fsigma_P=1.
@@ -84,15 +94,31 @@ data_spec_sMBB = (nu_pico, D_vec_sMBB, Ninv, beam_mat)
 data_spec_pMBB_broad = (nu_pico, D_vec_pMBB_broad, Ninv, beam_mat)
 data_spec_pMBB_narrow = (nu_pico, D_vec_pMBB_narrow, Ninv, beam_mat)
 
-p_spec_sMBB = (pnames_sMBB, initial_vals_MBB, parent_model)
-p_spec_pMBB_broadMBB = (pnames_pMBB_broad, initial_vals_pMBB_broad, parent_model)
+p_spec_sMBB = (pnames_sMBB, initial_vals_sMBB, parent_model)
+p_spec_pMBB_broad = (pnames_pMBB_broad, initial_vals_pMBB_broad, parent_model)
 p_spec_pMBB_narrow = (pnames_pMBB_narrow, initial_vals_pMBB_narrow, parent_model)
 
-pnames_out, samples, logp  = fitting.joint_mcmc(data_spec_probMBB, [test, cmb, sync], p_spec_probMBB, nwalkers=30,
-               burn=5000, steps=20000, nthreads=2, sample_file=None)
+pnames_out_sMBB, samples_sMBB, logp_sMBB  = fitting.joint_mcmc(data_spec_sMBB, [sMBB, cmb, sync], p_spec_sMBB, nwalkers=30,
+               burn=10000, steps=100000, nthreads=2, sample_file=None)
 
-ax = corner.corner(samples.T, labels=['dust I', 'dust Q', 'dust U', 'cmb I', 'cmb Q', 'cmb U', 'sync I', 'sync Q', 'sync U',
+pnames_out_pMBB_broad, samples_pMBB_broad, logp_pMBB_broad  = fitting.joint_mcmc(data_spec_pMBB_broad, [sMBB, cmb, sync], p_spec_sMBB, nwalkers=30,
+               burn=10000, steps=100000, nthreads=2, sample_file=None)
+
+pnames_out_pMBB_narrow, samples_pMBB_narrow, logp_pMBB_narrow  = fitting.joint_mcmc(data_spec_pMBB_narrow, [sMBB, cmb, sync], p_spec_sMBB, nwalkers=30,
+               burn=10000, steps=100000, nthreads=2, sample_file=None)
+
+ax1 = corner.corner(samples_sMBB.T, labels=['dust I', 'dust Q', 'dust U', 'cmb I', 'cmb Q', 'cmb U', 'sync I', 'sync Q', 'sync U',
                            'mean beta', 'mean temp', 'sync beta'],
                            truths=initial_vals_sMBB, plot_datapoints=False)
 
-ax.savefig('sMBB2sMBB.pdf')
+ax2 = corner.corner(samples_pMBB_broad.T, labels=['dust I', 'dust Q', 'dust U', 'cmb I', 'cmb Q', 'cmb U', 'sync I', 'sync Q', 'sync U',
+                           'mean beta', 'mean temp', 'sync beta'],
+                           truths=initial_vals_sMBB, plot_datapoints=False)
+
+ax3 = corner.corner(samples_pMBB_narrow.T, labels=['dust I', 'dust Q', 'dust U', 'cmb I', 'cmb Q', 'cmb U', 'sync I', 'sync Q', 'sync U',
+                           'mean beta', 'mean temp', 'sync beta'],
+                           truths=initial_vals_sMBB, plot_datapoints=False)
+
+ax1.savefig('sMBB2sMBB.pdf')
+ax2.savefig('sMBB2pMBB_broad.pdf')
+ax3.savefig('sMBB2pMBB_narrow.pdf')
