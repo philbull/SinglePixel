@@ -99,26 +99,26 @@ p_spec_pMBB_broad = (pnames_pMBB_broad, initial_vals_pMBB_broad, parent_model)
 p_spec_pMBB_narrow = (pnames_pMBB_narrow, initial_vals_pMBB_narrow, parent_model)
 
 pnames_out_sMBB, samples_sMBB, logp_sMBB  = fitting.joint_mcmc(data_spec_sMBB, [sMBB, cmb, sync], p_spec_sMBB, nwalkers=30,
-               burn=10000, steps=100000, nthreads=2, sample_file=None)
+               burn=1000, steps=5000, nthreads=2, sample_file=None)
 
-pnames_out_pMBB_broad, samples_pMBB_broad, logp_pMBB_broad  = fitting.joint_mcmc(data_spec_pMBB_broad, [sMBB, cmb, sync], p_spec_sMBB, nwalkers=30,
-               burn=10000, steps=100000, nthreads=2, sample_file=None)
+#pnames_out_pMBB_broad, samples_pMBB_broad, logp_pMBB_broad  = fitting.joint_mcmc(data_spec_pMBB_broad, [sMBB, cmb, sync], p_spec_sMBB, nwalkers=30,
+#               burn=0, steps=100, nthreads=2, sample_file=None)
 
-pnames_out_pMBB_narrow, samples_pMBB_narrow, logp_pMBB_narrow  = fitting.joint_mcmc(data_spec_pMBB_narrow, [sMBB, cmb, sync], p_spec_sMBB, nwalkers=30,
-               burn=10000, steps=100000, nthreads=2, sample_file=None)
+#pnames_out_pMBB_narrow, samples_pMBB_narrow, logp_pMBB_narrow  = fitting.joint_mcmc(data_spec_pMBB_narrow, [sMBB, cmb, sync], p_spec_sMBB, nwalkers=30,
+#               burn=0, steps=100, nthreads=2, sample_file=None)
 
 ax1 = corner.corner(samples_sMBB.T, labels=['dust I', 'dust Q', 'dust U', 'cmb I', 'cmb Q', 'cmb U', 'sync I', 'sync Q', 'sync U',
                            'mean beta', 'mean temp', 'sync beta'],
                            truths=initial_vals_sMBB, plot_datapoints=False)
 
-ax2 = corner.corner(samples_pMBB_broad.T, labels=['dust I', 'dust Q', 'dust U', 'cmb I', 'cmb Q', 'cmb U', 'sync I', 'sync Q', 'sync U',
-                           'mean beta', 'mean temp', 'sync beta'],
-                           truths=initial_vals_sMBB, plot_datapoints=False)
+#ax2 = corner.corner(samples_pMBB_broad.T, labels=['dust I', 'dust Q', 'dust U', 'cmb I', 'cmb Q', 'cmb U', 'sync I', 'sync Q', 'sync U',
+#                           'mean beta', 'mean temp', 'sync beta'],
+#                           truths=initial_vals_sMBB, plot_datapoints=False)
 
-ax3 = corner.corner(samples_pMBB_narrow.T, labels=['dust I', 'dust Q', 'dust U', 'cmb I', 'cmb Q', 'cmb U', 'sync I', 'sync Q', 'sync U',
-                           'mean beta', 'mean temp', 'sync beta'],
-                           truths=initial_vals_sMBB, plot_datapoints=False)
+#ax3 = corner.corner(samples_pMBB_narrow.T, labels=['dust I', 'dust Q', 'dust U', 'cmb I', 'cmb Q', 'cmb U', 'sync I', 'sync Q', 'sync U',
+#                           'mean beta', 'mean temp', 'sync beta'],
+#                           truths=initial_vals_sMBB, plot_datapoints=False)
 
 ax1.savefig('sMBB2sMBB.pdf')
-ax2.savefig('sMBB2pMBB_broad.pdf')
-ax3.savefig('sMBB2pMBB_narrow.pdf')
+#ax2.savefig('sMBB2pMBB_broad.pdf')
+#ax3.savefig('sMBB2pMBB_narrow.pdf')
