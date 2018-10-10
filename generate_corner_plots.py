@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 import model_list, models, fitting
 import matplotlib.lines as mlines
 import corner
@@ -8,8 +9,10 @@ import copy as cp
 from utils import rj2cmb
 
 plt.style.use('seaborn-colorblind')
-plt.rc('text', usetex=True)
-plt.rc('font', family='serif')
+#plt.rc('text', usetex=True)
+#plt.rc('font', family='serif')
+
+print "hello!"
 
 mean_beta = 1.6
 mean_temp = 20.
@@ -55,6 +58,7 @@ def make_pnames(models_fit):
 pnames_sMBB = make_pnames(models_sMBB)
 pnames_pMBB_broad = make_pnames(models_pMBB_broad)
 pnames_pMBB_narrow = make_pnames(models_pMBB_narrow)
+print pnames_sMBB
 
 fsigma_T=1e3
 fsigma_P=1.
@@ -98,27 +102,27 @@ p_spec_sMBB = (pnames_sMBB, initial_vals_sMBB, parent_model)
 p_spec_pMBB_broad = (pnames_pMBB_broad, initial_vals_pMBB_broad, parent_model)
 p_spec_pMBB_narrow = (pnames_pMBB_narrow, initial_vals_pMBB_narrow, parent_model)
 
+print "running emcee"
+
 pnames_out_sMBB, samples_sMBB, logp_sMBB  = fitting.joint_mcmc(data_spec_sMBB, [sMBB, cmb, sync], p_spec_sMBB, nwalkers=30,
-               burn=10000, steps=100000, nthreads=2, sample_file=None)
+               burn=1000, steps=10000, nthreads=8, sample_file=None)
 
-pnames_out_pMBB_broad, samples_pMBB_broad, logp_pMBB_broad  = fitting.joint_mcmc(data_spec_pMBB_broad, [sMBB, cmb, sync], p_spec_sMBB, nwalkers=30,
-               burn=10000, steps=100000, nthreads=2, sample_file=None)
+#pnames_out_pMBB_broad, samples_pMBB_broad, logp_pMBB_broad  = fitting.joint_mcmc(data_spec_pMBB_broad, [sMBB, cmb, sync], p_spec_sMBB, nwalkers=30,
+#               burn=1000, steps=10000, nthreads=8, sample_file=None)
 
-pnames_out_pMBB_narrow, samples_pMBB_narrow, logp_pMBB_narrow  = fitting.joint_mcmc(data_spec_pMBB_narrow, [sMBB, cmb, sync], p_spec_sMBB, nwalkers=30,
-               burn=10000, steps=100000, nthreads=2, sample_file=None)
+#pnames_out_pMBB_narrow, samples_pMBB_narrow, logp_pMBB_narrow  = fitting.joint_mcmc(data_spec_pMBB_narrow, [sMBB, cmb, sync], p_spec_sMBB, nwalkers=30,
+#               burn=1000, steps=10000, nthreads=8, sample_file=None)
 
-ax1 = corner.corner(samples_sMBB.T, labels=['dust I', 'dust Q', 'dust U', 'cmb I', 'cmb Q', 'cmb U', 'sync I', 'sync Q', 'sync U',
-                           'mean beta', 'mean temp', 'sync beta'],
-                           truths=initial_vals_sMBB, plot_datapoints=False)
+ax1 = corner.corner(samples_sMBB.T, labels=['dust I', 'dust Q', 'dust U', 'cmb I', 'cmb Q', 'cmb U', 'sync I', 'sync Q', 'sync U', 'dust beta', 'dust temp', 'sync beta'], truths=initial_vals_sMBB, plot_datapoints=False)
 
-ax2 = corner.corner(samples_pMBB_broad.T, labels=['dust I', 'dust Q', 'dust U', 'cmb I', 'cmb Q', 'cmb U', 'sync I', 'sync Q', 'sync U',
-                           'mean beta', 'mean temp', 'sync beta'],
-                           truths=initial_vals_sMBB, plot_datapoints=False)
+#ax2 = corner.corner(samples_pMBB_broad.T, labels=['dust I', 'dust Q', 'dust U', 'cmb I', 'cmb Q', 'cmb U', 'sync I', 'sync Q', 'sync U',
+ #                          'mean beta', 'mean temp', 'sync beta'],
+ #                          truths=initial_vals_sMBB, plot_datapoints=False)
 
-ax3 = corner.corner(samples_pMBB_narrow.T, labels=['dust I', 'dust Q', 'dust U', 'cmb I', 'cmb Q', 'cmb U', 'sync I', 'sync Q', 'sync U',
-                           'mean beta', 'mean temp', 'sync beta'],
-                           truths=initial_vals_sMBB, plot_datapoints=False)
+#ax3 = corner.corner(samples_pMBB_narrow.T, labels=['dust I', 'dust Q', 'dust U', 'cmb I', 'cmb Q', 'cmb U', 'sync I', 'sync Q', 'sync U',
+#                           'mean beta', 'mean temp', 'sync beta'],
+#                           truths=initial_vals_sMBB, plot_datapoints=False)
 
-ax1.savefig('sMBB2sMBB.pdf')
-ax2.savefig('sMBB2pMBB_broad.pdf')
-ax3.savefig('sMBB2pMBB_narrow.pdf')
+ax1.savefig('sMBB2sMBBtestpdf')
+#ax2.savefig('sMBB2pMBB_broad.pdf')
+#ax3.savefig('sMBB2pMBB_narrow.pdf')
