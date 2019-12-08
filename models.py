@@ -181,8 +181,8 @@ class DustGenMBBDepol(DustGen):
 class DustModel(object):
     def __init__(self, amp_I, amp_Q, amp_U,
                  dust_beta=1.6, dust_T=20., fcar=1., fsilfe=0., uval=0.,
-                 sigma_beta=None, sigma_temp=None,
-                 name=None):
+                 sigma_beta=None, sigma_temp=None, mean_chi=None,
+                 kappa=None, name=None):
         """
         Generic dust component.
         """
@@ -205,6 +205,8 @@ class DustModel(object):
         self.uval = uval
         self.sigma_beta = sigma_beta
         self.sigma_temp = sigma_temp
+        self.mean_chi = mean_chi
+        self.kappa = kappa
 
         # List of parameter names
         self.param_names = ['dust_beta', 'dust_T', 'fcar', 'fsilfe', 'uval']
@@ -440,22 +442,27 @@ class ProbSingleMBB(DustModel):
         self.nu_ref = 353. * 1e9
         self.pdf_beta = gaussian
         self.pdf_temp = gaussian
+        self.pdf_polangle = vonMises
+
         # List of parameter names
-        self.param_names = ['dust_beta', 'dust_T', 'sigma_beta', 'sigma_temp'] # explicit names ex. mean_beta
+        self.param_names = ['dust_beta', 'dust_T',
+                    'sigma_beta', 'sigma_temp'] # explicit names ex. mean_beta
 
     def params(self):
         """
         Return list of parameters.
         """
-        return np.array([self.dust_beta, self.dust_T, self.sigma_beta, self.sigma_temp])
+        return np.array([self.dust_beta, self.dust_T, self.sigma_beta,
+            self.sigma_temp])
 
     def set_params(self, params):
         """
         Set parameters from an array, using the same ordering as the list
         returned by self.params().
         """
-        # not correct for probabilistic model, FIX ME
-        self.dust_beta, self.dust_T, self.sigma_beta, self.sigma_temp = params
+
+        (self.dust_beta, self.dust_T, self.sigma_beta,
+         self.sigma_temp) = params
 
     def scaling(self, nu, params=None):
         """
@@ -464,27 +471,180 @@ class ProbSingleMBB(DustModel):
         if params is not None:
             dust_beta, dust_T, sigma_beta, sigma_temp = params
         else:
-            dust_beta = self.dust_beta
-            dust_T = self.dust_T
+            mean_beta = self.dust_beta
+            mean_T = self.dust_T
             sigma_beta = self.sigma_beta
             sigma_temp = self.sigma_temp
-
-        nu_ref = self.nu_ref
+            nu_ref = self.nu_ref
 
         n_samples = 500
         beta = np.linspace(.1, 5., n_samples)
         temp = np.linspace(1., 50., n_samples)
         BETA, TEMP = np.meshgrid(beta, temp)
 
-        integrand = lambda nu: prob_MBB(BETA, TEMP, nu, gaussian, gaussian, (dust_beta, sigma_beta),
-         (dust_T, sigma_temp))
+        integrand = lambda nu: prob_MBB(BETA, TEMP, nu, gaussian, gaussian, (mean_beta, sigma_beta),
+                                    (mean_T, sigma_temp))
 
         I_ref = integrate.simps(integrate.simps(integrand(nu_ref), beta), temp)
 
-        # Frequency-dependent scalings.
+            # Frequency-dependent scalings.
         dust_I = [integrate.simps(integrate.simps(integrand(nu), beta), temp) / I_ref for nu in nu]
         dust_Q = dust_I
         dust_U = dust_I
+
+        return np.array([dust_I, dust_Q, dust_U])
+
+class TMFM(DustModel):
+    def __init__(self, *args, **kwargs):
+        """
+        Modified blackbody dust component.
+        """
+        #kwargs['hdmodel'] = False
+
+        super(TMFM, self).__init__(*args, **kwargs)
+        self.model = 'TMFM'
+        if self.name is None: self.name = "TMFM"
+
+        # Reference frequency
+        self.nu_ref = 353. * 1e9
+        self.pdf_beta = gaussian
+        self.pdf_polangle = vonMises
+
+        mean_beta = self.dust_beta
+        mean_T = self.dust_T
+        sigma_beta = self.sigma_beta
+        mean_chi = self.mean_chi
+        kappa = self.kappa
+        nu_ref = self.nu_ref
+
+
+        # List of parameter names
+        self.param_names = ['mean_beta', 'mean_T',
+                    'sigma_beta', 'mean_chi', 'kappa'] # explicit names ex. mean_beta
+
+    def params(self):
+        """
+        Return list of parameters.
+        """
+        return np.array([self.dust_beta, self.dust_T, self.sigma_beta,
+            self.mean_chi, self.kappa])
+
+    def set_params(self, params):
+        """
+        Set parameters from an array, using the same ordering as the list
+        returned by self.params().
+        """
+
+        (self.dust_beta, self.dust_T, self.sigma_beta,
+            self.mean_chi, self.kappa) = params
+
+    def scaling(self, nu, params=None):
+        """
+        Return frequency scaling factor at a given frequency.
+        """
+        if params is not None:
+            dust_beta, dust_T, sigma_beta, pol_angle, kappa = params
+        else:
+            mean_beta = self.dust_beta
+            mean_T = self.dust_T
+            sigma_beta = self.sigma_beta
+            mean_chi = self.mean_chi
+            kappa = self.kappa
+            nu_ref = self.nu_ref
+            beta_params = [mean_beta, sigma_beta]
+            pdf_beta = self.pdf_beta
+
+        n_samples = 500
+        beta = np.linspace(.1, 5., n_samples)
+        chi = np.linspace(-np.pi / 2., np.pi / 2., 500)
+
+        dust_Q = prob_MBB_Q(chi, mean_chi, beta, mean_T, nu, pdf_beta, beta_params, nu_ref)
+        dust_U = prob_MBB_U(chi, mean_chi, beta, mean_T, nu, pdf_beta, beta_params, nu_ref)
+
+        # Frequency-dependent scalings.
+        dust_I = (nu / nu_ref)**mean_beta * B_nu(nu, mean_T) \
+                           * G_nu(nu_ref, Tcmb) \
+                           / ( B_nu(353.*1e9, mean_T) * G_nu(nu, Tcmb) )
+        dust_Q = dust_Q
+        dust_U = dust_U
+
+        return np.array([dust_I, dust_Q, dust_U])
+
+
+class sMBB_TMFM(DustModel):
+    def __init__(self, *args, **kwargs):
+        """
+        Modified blackbody dust component.
+        """
+        #kwargs['hdmodel'] = False
+
+        super(TMFM, self).__init__(*args, **kwargs)
+        self.model = 'TMFM'
+        if self.name is None: self.name = "TMFM"
+
+        # Reference frequency
+        self.nu_ref = 353. * 1e9
+        self.pdf_beta = gaussian
+        self.pdf_polangle = vonMises
+
+        mean_beta = self.dust_beta
+        mean_T = self.dust_T
+        sigma_beta = self.sigma_beta
+        mean_chi = self.mean_chi
+        kappa = self.kappa
+        nu_ref = self.nu_ref
+
+
+        # List of parameter names
+        self.param_names = ['mean_beta', 'mean_T',
+                    'sigma_beta', 'mean_chi', 'kappa'] # explicit names ex. mean_beta
+
+    def params(self):
+        """
+        Return list of parameters.
+        """
+        return np.array([self.dust_beta, self.dust_T, self.sigma_beta,
+            self.mean_chi, self.kappa])
+
+    def set_params(self, params):
+        """
+        Set parameters from an array, using the same ordering as the list
+        returned by self.params().
+        """
+
+        (self.dust_beta, self.dust_T, self.sigma_beta,
+            self.mean_chi, self.kappa) = params
+
+    def scaling(self, nu, params=None):
+        """
+        Return frequency scaling factor at a given frequency.
+        """
+        if params is not None:
+            dust_beta, dust_T, sigma_beta, pol_angle, kappa = params
+        else:
+            mean_beta = self.dust_beta
+            mean_T = self.dust_T
+            sigma_beta = self.sigma_beta
+            mean_chi = self.mean_chi
+            kappa = self.kappa
+            nu_ref = self.nu_ref
+
+        n_samples = 500
+        chi = np.linspace(-np.pi / 2., np.pi / 2., 500)
+
+
+        dust_Q = ((nu / nu_ref)**mean_beta * dust_Q_pol(chi, nu, mean_T, mean_chi, X=4.0)
+                    / dust_Q_pol(chi, nu_ref, mean_T, mean_chi, X=4.0))
+        dust_U = ((nu / nu_ref)**mean_beta * dust_U_pol(chi, nu, mean_T, mean_chi, X=4.0)
+                    / dust_Q_pol(chi, nu_ref, mean_T, mean_chi, X=4.0))
+
+
+        # Frequency-dependent scalings.
+        dust_I = ((nu / nu_ref)**mean_beta * B_nu(nu, mean_T) \
+                           * G_nu(nu_ref, Tcmb) \
+                           / ( B_nu(353.*1e9, mean_T) * G_nu(nu, Tcmb) ))
+        dust_Q = [integrate.simps(integrand_Q(nu), chi) for nu in nu]
+        dust_U = [integrate.simps(integrand_U(nu), chi) for nu in nu]
 
         return np.array([dust_I, dust_Q, dust_U])
 
@@ -551,6 +711,138 @@ class ProbTwoMBB(DustGen):
         dust_U = dust_I
 
         return np.array([dust_I, dust_Q, dust_U])
+
+#-------------------------------------------------------------------------------
+# Chluba and Hill Dust model
+#-------------------------------------------------------------------------------
+
+class ChlubaHill(DustModel):
+    # and Maximilien!
+    def __init__(self, *args, **kwargs):
+        """
+        Modified blackbody dust component.
+        """
+        #kwargs['hdmodel'] = False
+
+        super(ChlubaHill, self).__init__(*args, **kwargs)
+        self.model = 'chlubahill'
+        if self.name is None: self.name = "ChlubaHill"
+
+        # Reference frequency
+        self.nu_ref = 353. * 1e9
+
+        # List of parameter names
+        self.param_names = ['dust_beta', 'dust_T', 'sigma_beta', 'sigma_temp'] # explicit names ex. mean_beta
+
+    def params(self):
+        """
+        Return list of parameters.
+        """
+        return np.array([self.dust_beta, self.dust_T, self.sigma_beta, self.sigma_temp])
+
+    def set_params(self, params):
+        """
+        Set parameters from an array, using the same ordering as the list
+        returned by self.params().
+        """
+        # not correct for probabilistic model, FIX ME
+        self.dust_beta, self.dust_T, self.sigma_beta, self.sigma_temp = params
+
+    def scaling(self, nu, n=1, params=None):
+        """
+        Return frequency scaling factor at a given frequency.
+        """
+        if params is not None:
+            dust_beta, dust_T, sigma_beta, sigma_temp = params
+        else:
+            dust_beta = self.dust_beta
+            dust_T = self.dust_T
+            sigma_beta = self.sigma_beta
+            sigma_temp = self.sigma_temp
+
+            n_samples = 500
+            beta = np.linspace(.1, 5., n_samples)
+            temp = np.linspace(1., 50., n_samples)
+            BETA, TEMP = np.meshgrid(beta, temp)
+
+            A_0 = self.amp_I
+            mean_tau = integrate.simps(gaussian(temp, [mean_temp, sigma_temp])
+                        / temp, temp)
+
+            def x(nu, T):
+                return h * nu / k * T
+
+            def Y_1(x):
+                return x * np.exp(x) / np.expm1(x)
+
+            def Y_2(x):
+                return Y_1(x) * x / np.tanh(x / 2.)
+
+            def Y_3(x):
+                return Y_1(x) * x**2. * (np.cosh(x) + 2.) / (np.cosh(x) - 1.)
+
+            def calc_weight(beta_num, tau_num):
+
+                integrand = (lambda BETA, TEMP: (BETA - mean_beta)**beta_num
+                             * gaussian(BETA, [mean_beta, sigma_beta])
+                             * (1. / TEMP - mean_tau)**tau_num
+                             * gaussian(TEMP, [mean_temp, sigma_temp]))
+
+                weight = integrate.simps(integrate.simps(integrand(BETA, TEMP), beta), temp)
+
+                return weight
+
+            def moments(nu, n):
+                moments = 0;
+
+                if n >= 1:
+                    moments += 1.0
+
+                if n >= 2:
+
+                    w_22 = calc_weight(2, 0)
+                    w_23 = calc_weight(1, 1)
+                    w_33 = calc_weight(0, 2)
+
+                    print ("w_22= " + str(w_22))
+                    print ("w_23= " + str(w_23))
+                    print ("w_33= " + str(w_33))
+
+                    moments += (.5 * w_22 * np.log(nu / nu_ref)**2
+                    + w_23 * np.log(nu / nu_ref) * Y_1(x(nu, dust_T))
+                    + .5 * w_33 * Y_2(x(nu, dust_T)))
+                    #print moments
+
+                if n >= 3:
+
+                    w_222 = calc_weight(3, 0)
+                    w_223 = calc_weight(2, 1)
+                    w_233 = calc_weight(1, 2)
+                    w_333 = calc_weight(0, 3)
+
+                    print ("w_222= " + str(w_222))
+                    print ("w_223= " + str(w_223))
+                    print ("w_233= " + str(w_233))
+                    print ("w_333= " + str(w_333))
+
+                    #print w_222, w_223, w_233, w_333
+
+                    moments += 1
+                    #print moments
+
+                if n >= 4:
+                    pass
+                if n >= 5:
+                    pass
+                print (moments)
+                return moments
+
+        # Frequency-dependent scalings.
+            dust_I = single_MBB(nu, [dust_beta, 1.0/mean_tau, 1.0]) * moments(nu, n)
+            dust_Q = dust_I
+            dust_U = dust_I
+
+            return np.array([dust_I, dust_Q, dust_U])
 
 #-------------------------------------------------------------------------------
 # AME model

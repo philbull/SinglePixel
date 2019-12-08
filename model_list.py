@@ -1,9 +1,12 @@
 
 import models
+import numpy as np
 from utils import rj2cmb
 
 DUST_I = 50.
 DUST_P = 5. / 1.41
+sigma_beta = .2
+sigma_temp = 4.
 
 # Define input models and their amplitudes/parameters
 dust_model = models.DustMBB( amp_I=rj2cmb(353e9, DUST_I),
@@ -11,11 +14,30 @@ dust_model = models.DustMBB( amp_I=rj2cmb(353e9, DUST_I),
                              amp_U=rj2cmb(353e9, DUST_P),
                              dust_beta=1.6, dust_T=20. )
 
-prob1mbb_model = models.ProbSingleMBB( amp_I=rj2cmb(353e9, DUST_I),
+prob1mbb_model_narrow = models.ProbSingleMBB(amp_I=rj2cmb(353e9, DUST_I),
                              amp_Q=rj2cmb(353e9, DUST_P),
                              amp_U=rj2cmb(353e9, DUST_P),
                              dust_beta=1.6, dust_T=20.,
-                             sigma_beta=.2, sigma_temp=4. )
+                             sigma_beta=.1 * sigma_beta, sigma_temp=.1 * sigma_temp)
+
+prob1mbb_model_intermediate = models.ProbSingleMBB(amp_I=rj2cmb(353e9, DUST_I),
+                             amp_Q=rj2cmb(353e9, DUST_P),
+                             amp_U=rj2cmb(353e9, DUST_P),
+                             dust_beta=1.6, dust_T=20.,
+                             sigma_beta=.5 * sigma_beta, sigma_temp=.5 * sigma_temp)
+
+prob1mbb_model_broad = models.ProbSingleMBB(amp_I=rj2cmb(353e9, DUST_I),
+                             amp_Q=rj2cmb(353e9, DUST_P),
+                             amp_U=rj2cmb(353e9, DUST_P),
+                             dust_beta=1.6, dust_T=20.,
+                             sigma_beta=sigma_beta, sigma_temp=sigma_temp)
+
+TMFM = models.TMFM(amp_I=rj2cmb(353e9, DUST_I),
+                             amp_Q=rj2cmb(353e9, DUST_P),
+                             amp_U=rj2cmb(353e9, DUST_P),
+                             dust_beta=1.6, dust_T=20.,
+                             sigma_beta=sigma_beta,
+                             mean_chi=np.pi / 4., kappa=1.0)
 
 simple_dust_model = models.DustSimpleMBB( amp_I=rj2cmb(353e9, DUST_I),
                              amp_Q=rj2cmb(353e9, DUST_P),

@@ -379,7 +379,7 @@ def generate_data(nu, fsigma_T, fsigma_P, components,
     # the signal at a given frequency (should be in uK_CMB)
     signal = 0
     cmb_signal = 0
-    # Disabled for the case of the allsky
+    # Disabled for the case of the   allsky
     if idx_px == 0:
         pass #print( "(FITTING.PY) Parameters in the input model:" )
     for comp in components:
@@ -453,7 +453,7 @@ def model_test(nu, D_vec, Ninv, models_fit, initial_vals=None, burn=500,
     params_out, pnames, samples = mcmc(data_spec, models_fit, param_spec,
                                        burn=burn, steps=steps,
                                        sample_file=sample_file)
-    print "MCMC run in %d sec." % (time.time() - t0)
+    print ("MCMC run in %d sec." % (time.time() - t0))
 
     # Estimate error on recovered CMB amplitudes
     # FIXME: Why estimate error using F_matrix on median!?

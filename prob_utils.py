@@ -35,14 +35,25 @@ beta = np.linspace(.1, 5., n_samples)
 temp = np.linspace(1., 50., n_samples)
 BETA, TEMP = np.meshgrid(beta, temp)
 
+chi = np.linspace(-np.pi / 2., np.pi / 2., 500)
+mean_chi = np.pi / 8.
+kappa = 1.
+X = 4
+mean_T = mean_temp
+
 def gaussian(x, params):
     mean, sigma = params # unpack parameters
     normalization = 1. / (np.sqrt(2 * np.pi) * sigma)
-    return normalization * np.exp((-1. / ( 2 * sigma**2 )) * (x - mean)**2)
+    return normalization * np.exp((-1. / ( 2 * sigma**2. )) * (x - mean)**2.)
 
 def bimodal(x, params):
     pdf, params1, params2, p = params # unpack parameters
-    return p * pdf(x, params1) + (1 - p) * pdf(x, params2)
+    return p * pdf(x, params1) + (1. - p) * pdf(x, params2)
+
+def vonMises(x, params):
+    mean, kappa = params # unpack parameters
+    normalization = 1. / (np.pi * special.iv(0, kappa))
+    return normalization * np.exp(kappa * np.cos(2.0 * x - mean))
 
 def prob_MBB(beta, temp, nu, pdf_beta, pdf_temp, beta_params, temp_params, nu_ref = 353. * 1e9):
 
@@ -75,3 +86,47 @@ def generate_fits(BETA, TEMP, nu, pdf_beta, pdf_temp, beta_params, temp_params):
     coeffs_fit, flag = optimize.leastsq(residuals, coeffs_guess, args=(np.log10(data[0]), nu))
 
     return data, coeffs_fit
+
+def dust_T_pol(chi, mean_chi, X, mean_T):
+
+    delta_chi_min = .5 * np.pi - np.abs(np.abs(chi - mean_chi) - .5 * np.pi)
+
+    return mean_T + X * delta_chi_min / (np.pi / 2.)
+
+def dust_Q_pol(chi, nu, mean_T, mean_chi, X=4.0):
+    return B_nu(nu, dust_T_pol(chi, mean_chi, X, mean_T)) \
+               * G_nu(nu_ref, Tcmb) \
+               / ( B_nu(353.*1e9, dust_T_pol(chi, mean_chi, X, mean_T)) * G_nu(nu, Tcmb) ) \
+                * np.cos(2. * chi) * vonMises(chi, (mean_chi, kappa))
+
+def dust_U_pol(chi, nu, mean_T, mean_chi, X=4.0):
+    return B_nu(nu, dust_T_pol(chi, mean_chi, X, mean_T)) \
+               * G_nu(nu_ref, Tcmb) \
+               / ( B_nu(353.*1e9, dust_T_pol(chi, mean_chi, X, mean_T)) * G_nu(nu, Tcmb) ) \
+                * np.sin(2. * chi) * vonMises(chi, (mean_chi, kappa))
+
+def prob_MBB_Q(chi, mean_chi, beta, mean_T, nu, pdf_beta, beta_params, nu_ref):
+    I1_Q = lambda nu: dust_Q_pol(chi, nu, mean_T, mean_chi)
+    Q_ref = integrate.simps(I1_Q(nu_ref), chi)
+
+    int_I1_Q = [integrate.simps(I1_Q(nu), chi) / Q_ref for nu in nu]
+
+    I2_Q = lambda nu: (nu / nu_ref)**beta * pdf_beta(beta, beta_params)
+
+    int_I2_Q = [integrate.simps(I2_Q(nu), beta) for nu in nu]
+    # print(int_I1_Q)
+
+    return np.asarray(int_I1_Q) * np.asarray(int_I2_Q)
+
+def prob_MBB_U(chi, mean_chi, beta, mean_T, nu, pdf_beta, beta_params, nu_ref):
+    I1_U = lambda nu: dust_U_pol(chi, nu, mean_T, mean_chi)
+    U_ref = integrate.simps(I1_U(nu_ref), chi)
+
+    int_I1_U = [integrate.simps(I1_U(nu), chi) / U_ref for nu in nu]
+
+    I2_U = lambda nu: (nu / nu_ref)**beta * pdf_beta(beta, beta_params)
+
+    int_I2_U = [integrate.simps(I2_U(nu), beta) for nu in nu]
+    # print(int_I1_U)
+
+    return np.asarray(int_I1_U) * np.asarray(int_I2_U)
