@@ -468,14 +468,20 @@ class ProbSingleMBB(DustModel):
         """
         Return frequency scaling factor at a given frequency.
         """
+        mean_beta = 0
+        mean_T = 0
+        sigma_beta = 0
+        sigma_temp = 0
+
         if params is not None:
-            dust_beta, dust_T, sigma_beta, sigma_temp = params
+            mean_beta, mean_T, sigma_beta, sigma_temp = params
         else:
             mean_beta = self.dust_beta
             mean_T = self.dust_T
             sigma_beta = self.sigma_beta
             sigma_temp = self.sigma_temp
-            nu_ref = self.nu_ref
+
+        nu_ref = self.nu_ref
 
         n_samples = 500
         beta = np.linspace(.1, 5., n_samples)
