@@ -5,6 +5,8 @@ from scipy.interpolate import interp1d
 import copy, time
 import emcee
 
+from multiprocessing import Pool
+
 def ln_prior(pvals, models):
     """
     Logarithm of the prior (mostly just uniform prior bounds for now).
@@ -97,7 +99,7 @@ def lnprob(pvals, data_spec, models_fit, param_spec, Ninv_sqrt):
     return lnprob, np.array(x_mat.T)[0]
 
 
-def lnprob_joint(params, data_spec, models_fit, param_spec):
+def lnprob_joint(params, data_spec, models_fit, param_spec, decouple=False):
     """
     log-probability (likelihood times prior) for a set of parameter values.
     """
@@ -120,38 +122,78 @@ def lnprob_joint(params, data_spec, models_fit, param_spec):
     #models = [copy.deepcopy(m) for m in models_fit]
     models = models_fit
 
+    if decouple is False:
     # Set new parameter values for the copied model objects, and then get
     # scalings as a function of freq./polarisation
-    pstart = 0
-    mdata = np.zeros(nu.size * Npol)
-    for i in range(len(models)):
-        m = models[i]
+        pstart = 0
+        mdata = np.zeros(nu.size * Npol)
 
-        # Set new parameter values in the models
-        n = m.params().size
-        #m.set_params( pvals[pstart:pstart+n] )
-        mparams = pvals[pstart:pstart+n]
-        pstart += n # Increment for next model
+        for i in range(len(models)):
+            m = models[i]
 
-        # Calculate scaling with freq. given new parameter values
-        amp = np.outer( amps[3*i:3*(i+1)], np.ones(nu.size) ) # Npol*Nfreq array
+            # Set new parameter values in the models
+            n = m.params().size
+            #m.set_params( pvals[pstart:pstart+n] )
+            mparams = pvals[pstart:pstart+n]
+            pstart += n # Increment for next model
 
-        # Apply positivity prior on I amplitudes of all components
-        #if m.model == 'ame':
-        if np.any(amp[0] < 0.):
+            # Calculate scaling with freq. given new parameter values
+            amp = np.outer( amps[3*i:3*(i+1)], np.ones(nu.size) ) # Npol*Nfreq array
+
+            # Apply positivity prior on I amplitudes of all components
+            #if m.model == 'ame':
+            if np.any(amp[0] < 0.):
+                return -np.inf
+
+            # Add to model prediction of data vector
+            mdata += (amp * m.scaling(nu, params=mparams)).flatten()
+
+        # Calculate chi-squared with data (assumed beam = 1)
+        mdata = np.matrix(mdata).T
+        chi_square = (D_vec - mdata).T * Ninv * (D_vec - mdata)
+
+        # Return log-posterior
+        #return logpr - 0.5 * chi_square
+        return -0.5 * chi_square
+
+
+    if decouple is True:
+    # Set new parameter values for the copied model objects, and then get
+    # scalings as a function of freq./polarisation
+        mdata = np.zeros((Npol, nu.size))
+        pvals = np.asarray(pvals).reshape((Npol, int(len(pvals) / Npol)))
+        amps = np.asarray(amps).reshape((Npol, Nmod)).T
+
+        if np.any(amps[0] < 0.):
             return -np.inf
 
-        # Add to model prediction of data vector
-        mdata += (amp * m.scaling(nu, params=mparams)).flatten()
+        for i in range(Npol):
+            pstart = 0
 
-    # Calculate chi-squared with data (assumed beam = 1)
-    mdata = np.matrix(mdata).T
-    chi_square = (D_vec - mdata).T * Ninv * (D_vec - mdata)
+            for j in range(len(models)):
 
-    # Return log-posterior
-    #return logpr - 0.5 * chi_square
-    return -0.5 * chi_square
+                m = models[j]
 
+                # Set new parameter values in the models
+                n = m.params().size
+                #m.set_params( pvals[pstart:pstart+n] )
+                mparams = pvals[i][pstart:pstart+n]
+                pstart += n # Increment for next model
+
+                # Apply positivity prior on I amplitudes of all components
+                #if m.model == 'ame':
+
+                # Add to model prediction of data vector
+                mdata[i] += (amps[i,j] * m.scaling(nu, params=mparams)[i])
+
+
+            # Calculate chi-squared with data (assumed beam = 1)
+        mdata = np.matrix(mdata.flatten()).T
+        chi_square = (D_vec - mdata).T * Ninv * (D_vec - mdata)
+
+        # Return log-posterior
+        #return logpr - 0.5 * chi_square
+        return -0.5 * chi_square
 
 def F_matrix(pvals, nu, models_fit, param_spec):
     """
@@ -204,7 +246,7 @@ def F_matrix(pvals, nu, models_fit, param_spec):
     return np.matrix(F_fg), np.matrix(F_cmb), np.matrix(F)
 
 
-def mcmc(data_spec, models_fit, param_spec, nwalkers=50,
+def mcmc(data_spec, models_fit, param_spec, decouple=False, nwalkers=50,
          burn=500, steps=1000, sample_file=None):
     """
     Run MCMC to fit model to some simulated data.
@@ -256,7 +298,7 @@ def mcmc(data_spec, models_fit, param_spec, nwalkers=50,
     return params_out, pnames, samples
 
 
-def joint_mcmc(data_spec, models_fit, param_spec, nwalkers=100,
+def joint_mcmc(data_spec, models_fit, param_spec, decouple=False, nwalkers=100,
                burn=500, steps=1000, nthreads=2, sample_file=None):
     """
     Run MCMC to fit model to some simulated data. Fits to all parameters, both
@@ -284,8 +326,7 @@ def joint_mcmc(data_spec, models_fit, param_spec, nwalkers=100,
     #print param_spec
     # Run emcee sampler
     sampler = emcee.EnsembleSampler( nwalkers, ndim, lnprob_joint,
-                                     args=(data_spec, models_fit, param_spec),
-                                     threads=nthreads )
+                                 args=(data_spec, models_fit, param_spec, decouple))
     sampler.run_mcmc(pos, burn + steps)
 
     # Recover samples of spectral parameters and amplitudes
@@ -369,29 +410,53 @@ def noise_model(fname="data/noise_coreplus_extended.dat", scale=1.):
 
 
 def generate_data(nu, fsigma_T, fsigma_P, components,
-                  noise_file="data/core_plus_extended_noise.dat",
+                  noise_file="data/core_plus_extended_noise.dat", decouple=False,
                   idx_px = 0):
     """
     Create a mock data vector from a given set of models, including adding a
     noise realization.
     """
+    Npol = 3
     # Loop over components that were included in the data model and calculate
     # the signal at a given frequency (should be in uK_CMB)
-    signal = 0
-    cmb_signal = 0
-    # Disabled for the case of the   allsky
-    if idx_px == 0:
-        pass #print( "(FITTING.PY) Parameters in the input model:" )
-    for comp in components:
+    if decouple is False:
+
+        signal = 0
+        cmb_signal = 0
+
+        # Disabled for the case of the   allsky
         if idx_px == 0:
-            pass #print comp.param_names
+            pass #print( "(FITTING.PY) Parameters in the input model:" )
+        for comp in components:
+            if idx_px == 0:
+                pass #print comp.param_names
 
-        # Add this component to total signal
-        signal += np.atleast_2d(comp.amps()).T * comp.scaling(nu)
+            # Add this component to total signal
+            signal += np.atleast_2d(comp.amps()).T * comp.scaling(nu)
 
-        # Store CMB signal separately
-        if comp.model == 'cmb':
-            cmb_signal = np.atleast_2d(comp.amps()).T * comp.scaling(nu)
+            # Store CMB signal separately
+            if comp.model == 'cmb':
+                cmb_signal = np.atleast_2d(comp.amps()).T * comp.scaling(nu)
+
+    if decouple is True:
+
+        signal = np.zeros((Npol, len(nu)))
+        cmb_signal = np.zeros((Npol, len(nu)))
+
+        for i in range(Npol):
+
+            # Disabled for the case of the   allsky
+            if idx_px == 0:
+                pass #print( "(FITTING.PY) Parameters in the input model:" )
+            for comp in components[i]:
+                if idx_px == 0:
+                    pass #print comp.param_names
+                # Add this component to total signal
+                signal[i] += comp.amps()[i] * comp.scaling(nu)[i]
+
+                # Store CMB signal separately
+                if comp.model == 'cmb':
+                    cmb_signal = np.atleast_2d(comp.amps()).T * comp.scaling(nu)
 
     # Construct data vector
     D_vec = np.matrix(signal.flatten()).T

@@ -39,6 +39,12 @@ TMFM = models.TMFM(amp_I=rj2cmb(353e9, DUST_I),
                              sigma_beta=sigma_beta,
                              mean_chi=np.pi / 4., kappa=1.0)
 
+sMBB_TMFM = models.sMBB_TMFM(amp_I=rj2cmb(353e9, DUST_I),
+                             amp_Q=rj2cmb(353e9, DUST_P),
+                             amp_U=rj2cmb(353e9, DUST_P),
+                             dust_beta=1.6, dust_T=20.,
+                             mean_chi=np.pi / 4., kappa=1.0)
+
 TMFM_narrow = models.TMFM(amp_I=rj2cmb(353e9, DUST_I),
                             amp_Q=rj2cmb(353e9, DUST_P),
                             amp_U=rj2cmb(353e9, DUST_P),

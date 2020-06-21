@@ -584,18 +584,16 @@ class sMBB_TMFM(DustModel):
         """
         #kwargs['hdmodel'] = False
 
-        super(TMFM, self).__init__(*args, **kwargs)
+        super(sMBB_TMFM, self).__init__(*args, **kwargs)
         self.model = 'TMFM'
         if self.name is None: self.name = "TMFM"
 
         # Reference frequency
         self.nu_ref = 353. * 1e9
-        self.pdf_beta = gaussian
         self.pdf_polangle = vonMises
 
         mean_beta = self.dust_beta
         mean_T = self.dust_T
-        sigma_beta = self.sigma_beta
         mean_chi = self.mean_chi
         kappa = self.kappa
         nu_ref = self.nu_ref
@@ -626,11 +624,10 @@ class sMBB_TMFM(DustModel):
         Return frequency scaling factor at a given frequency.
         """
         if params is not None:
-            dust_beta, dust_T, sigma_beta, pol_angle, kappa = params
+            dust_beta, dust_T, pol_angle, kappa = params
         else:
             mean_beta = self.dust_beta
             mean_T = self.dust_T
-            sigma_beta = self.sigma_beta
             mean_chi = self.mean_chi
             kappa = self.kappa
             nu_ref = self.nu_ref
@@ -639,9 +636,9 @@ class sMBB_TMFM(DustModel):
         chi = np.linspace(-np.pi / 2., np.pi / 2., 500)
 
 
-        dust_Q = ((nu / nu_ref)**mean_beta * dust_Q_pol(chi, nu, mean_T, mean_chi, X=4.0)
+        dust_Q = (dust_Q_pol(chi, nu, mean_T, mean_chi, X=4.0)
                     / dust_Q_pol(chi, nu_ref, mean_T, mean_chi, X=4.0))
-        dust_U = ((nu / nu_ref)**mean_beta * dust_U_pol(chi, nu, mean_T, mean_chi, X=4.0)
+        dust_U = (dust_U_pol(chi, nu, mean_T, mean_chi, X=4.0)
                     / dust_Q_pol(chi, nu_ref, mean_T, mean_chi, X=4.0))
 
 
@@ -649,8 +646,8 @@ class sMBB_TMFM(DustModel):
         dust_I = ((nu / nu_ref)**mean_beta * B_nu(nu, mean_T) \
                            * G_nu(nu_ref, Tcmb) \
                            / ( B_nu(353.*1e9, mean_T) * G_nu(nu, Tcmb) ))
-        dust_Q = [integrate.simps(integrand_Q(nu), chi) for nu in nu]
-        dust_U = [integrate.simps(integrand_U(nu), chi) for nu in nu]
+        dust_Q = (nu / nu_ref)**mean_beta * [integrate.simps(integrand_Q(nu), chi) for nu in nu]
+        dust_U = (nu / nu_ref)**mean_beta * [integrate.simps(integrand_U(nu), chi) for nu in nu]
 
         return np.array([dust_I, dust_Q, dust_U])
 
