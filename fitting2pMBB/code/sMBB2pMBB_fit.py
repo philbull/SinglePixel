@@ -1,12 +1,9 @@
 import numpy as np
 import model_list, models, fitting
 import copy as cp
+import emcee
 
 from utils import rj2cmb
-
-#plt.style.use('seaborn-colorblind')
-#plt.rc('text', usetex=True)
-#plt.rc('font', family='serif')
 
 nu_pico = np.asarray([21,25,30, 36.0,43.2,51.8,62.2,74.6,89.6,
                       107.5,129.0,154.8,185.8,222.9,267.5,321.0,
@@ -23,10 +20,7 @@ amp_I=rj2cmb(353e9, DUST_I)
 amp_Q=rj2cmb(353e9, DUST_P)
 amp_U=rj2cmb(353e9, DUST_P)
 
-nu = np.logspace(np.log10(30), np.log10(500), 7) * 1e9
-
 sMBB = model_list.dust_model
-
 #sMBB_TMF = models_list.TMFM
 
 pMBB_narrow = model_list.prob1mbb_model_narrow
@@ -74,13 +68,13 @@ models_pMBB_narrow = [pMBB_narrow, cmb, sync]
 models_pMBB_intermediate = [pMBB_intermediate, cmb, sync]
 models_pMBB_broad = [pMBB_broad, cmb, sync]
 
-models_TMFM_narrow = [TMFM_narrow, cmb, sync]
-models_TMFM_intermediate = [TMFM_intermediate, cmb, sync]
-models_TMFM_broad = [TMFM_broad, cmb, sync]
+#models_TMFM_narrow = [TMFM_narrow, cmb, sync]
+#models_TMFM_intermediate = [TMFM_intermediate, cmb, sync]
+#models_TMFM_broad = [TMFM_broad, cmb, sync]
 
-sMBB_decouple = [models_sMBB, models_sMBB, [sMBB_U, cmb, sync]]
-pMBB_broad_decouple = [models_pMBB_broad, models_pMBB_broad, [pMBB_U, cmb, sync]]
-TMFM_broad_decouple = [models_TMFM_broad, models_TMFM_broad, [TMFM_U, cmb, sync]]
+#sMBB_decouple = [models_sMBB, models_sMBB, [sMBB_U, cmb, sync]]
+#pMBB_broad_decouple = [models_pMBB_broad, models_pMBB_broad, [pMBB_U, cmb, sync]]
+#TMFM_broad_decouple = [models_TMFM_broad, models_TMFM_broad, [TMFM_U, cmb, sync]]
 
 #models_pMBB_smallB_bigT = [pMBB_smallB_bigT, cmb, sync]
 
@@ -121,22 +115,32 @@ fsigma_P=1.
 beam_mat = np.identity(3*len(nu_pico)) # Beam model
 
 # pvals set the model parameters
-params_sMBB = [sMBB.amp_I, sMBB.amp_Q, sMBB.amp_U, cmb.amp_I, cmb.amp_Q, cmb.amp_U,
-              sync.amp_I, sync.amp_Q, sync.amp_U, sMBB.dust_beta, sMBB.dust_T,
-              sync.sync_beta]
-params_pMBB_narrow = [pMBB_broad.amp_I, pMBB_broad.amp_Q, pMBB_broad.amp_U, cmb.amp_I, cmb.amp_Q, cmb.amp_U,
-                sync.amp_I, sync.amp_Q, sync.amp_U, pMBB_broad.dust_beta, pMBB_narrow.dust_T,
-                pMBB_broad.sigma_beta, pMBB_broad.sigma_temp, sync.sync_beta]
-params_pMBB_intermediate = [pMBB_broad.amp_I, pMBB_broad.amp_Q, pMBB_broad.amp_U, cmb.amp_I, cmb.amp_Q, cmb.amp_U,
-                sync.amp_I, sync.amp_Q, sync.amp_U, pMBB_broad.dust_beta, pMBB_narrow.dust_T,
-                pMBB_broad.sigma_beta, pMBB_broad.sigma_temp, sync.sync_beta]
-params_pMBB_broad = [pMBB_broad.amp_I, pMBB_broad.amp_Q, pMBB_broad.amp_U, cmb.amp_I, cmb.amp_Q, cmb.amp_U,
-                sync.amp_I, sync.amp_Q, sync.amp_U, pMBB_broad.dust_beta, pMBB_narrow.dust_T,
-                pMBB_broad.sigma_beta, pMBB_broad.sigma_temp, sync.sync_beta]
+params_sMBB = [sMBB.amp_I, sMBB.amp_Q, sMBB.amp_U,
+               cmb.amp_I, cmb.amp_Q, cmb.amp_U,
+               sync.amp_I, sync.amp_Q, sync.amp_U,
+               sMBB.dust_beta, sMBB.dust_T,
+               sync.sync_beta]
+params_pMBB_narrow = [pMBB_narrow.amp_I, pMBB_narrow.amp_Q, pMBB_narrow.amp_U,
+                      cmb.amp_I, cmb.amp_Q, cmb.amp_U,
+                      sync.amp_I, sync.amp_Q, sync.amp_U,
+                      pMBB_narrow.dust_beta, pMBB_narrow.dust_T,
+                      pMBB_narrow.sigma_beta, pMBB_narrow.sigma_temp, sync.sync_beta]
+params_pMBB_intermediate = [pMBB_intermediate.amp_I, pMBB_intermediate.amp_Q, pMBB_intermediate.amp_U,
+                            cmb.amp_I, cmb.amp_Q, cmb.amp_U,
+                            sync.amp_I, sync.amp_Q, sync.amp_U,
+                            pMBB_intermediate.dust_beta, pMBB_intermediate.dust_T,
+                            pMBB_intermediate.sigma_beta, pMBB_intermediate.sigma_temp, sync.sync_beta]
+params_pMBB_broad = [pMBB_broad.amp_I, pMBB_broad.amp_Q, pMBB_broad.amp_U,
+                     cmb.amp_I, cmb.amp_Q, cmb.amp_U,
+                     sync.amp_I, sync.amp_Q, sync.amp_U,
+                     pMBB_broad.dust_beta, pMBB_narrow.dust_T,
+                     pMBB_broad.sigma_beta, pMBB_broad.sigma_temp, sync.sync_beta]
 
-initial_vals_sMBB = (amp_I, amp_Q, amp_U, cmb.amp_I, cmb.amp_Q, cmb.amp_U,
-                    sync.amp_I, sync.amp_Q, sync.amp_U, mean_beta, mean_temp,
-                    sync.sync_beta)
+initial_vals_sMBB2pMBB = cp.deepcopy([pMBB_narrow.amp_I, pMBB_narrow.amp_Q, pMBB_narrow.amp_U,
+                      cmb.amp_I, cmb.amp_Q, cmb.amp_U,
+                      sync.amp_I, sync.amp_Q, sync.amp_U,
+                      pMBB_narrow.dust_beta, pMBB_narrow.dust_T,
+                      0, 0, sync.sync_beta]) #(amp_I, amp_Q, amp_U, cmb.amp_I, cmb.amp_Q, cmb.amp_U, sync.amp_I, sync.amp_Q, sync.amp_U, mean_beta, mean_temp, 1e-2, 5e-3, sync.sync_beta)
 
 initial_vals_sMBB_decouple = (sMBB.amp_I, sMBB.amp_Q, sMBB.amp_U, cmb.amp_I, cmb.amp_Q, cmb.amp_U,
               sync.amp_I, sync.amp_Q, sync.amp_U, sMBB.dust_beta, sMBB.dust_T,
@@ -144,53 +148,41 @@ initial_vals_sMBB_decouple = (sMBB.amp_I, sMBB.amp_Q, sMBB.amp_U, cmb.amp_I, cmb
               sync.sync_beta, sMBB_U.dust_beta, sMBB_U.dust_T,
               sync.sync_beta)
 
-initial_vals_pMBB_broad = (amp_I, amp_Q, amp_U, cmb.amp_I, cmb.amp_Q, cmb.amp_U,
-                        sync.amp_I, sync.amp_Q, sync.amp_U, mean_beta, mean_temp,
-                        sigma_beta, sigma_temp, sync.sync_beta)
+initial_vals_pMBB_broad = cp.deepcopy(params_pMBB_broad)
 
-def single_fit(models_data, models_fit, initial_vals, nu=nu_pico, decouple=False):
+def single_fit(models_data, models_fit, initial_vals, nu=nu_pico, decouple=False, noiseless=False):
     parent_model = 'mbb'
     D_vec, Ninv = fitting.generate_data(nu, fsigma_T, fsigma_P, models_data,
                                             noise_file="data/noise_pico.dat",
                                             decouple=decouple)
+    print('initial vals: ', initial_vals)
+    if noiseless is True:
+        D_vec = np.mat(make_signal(models_data).reshape(63,1))
 
 
     data_spec = (nu_pico, D_vec, Ninv, beam_mat)
-    p_spec_sMBB = (pnames_pMBB, initial_vals, parent_model)
+    p_spec = (pnames_pMBB, initial_vals, parent_model)
 
     pnames_out, samples, logp  = fitting.joint_mcmc(data_spec,
-                                                models_fit, p_spec_sMBB,
+                                                models_fit, p_spec,
                                                 nwalkers=48, burn=1000,
                                                 steps=10000, nthreads=1,
                                                 sample_file=None, decouple=decouple)
 
     return pnames_out, samples, logp
 
-labels = np.asarray([r'$A_{\mathrm{MBB}}^I$',r'$A_{\mathrm{MBB}}^Q$',r'$A_{\mathrm{MBB}}^U$',
-          r'$A_{\mathrm{CMB}}^I$',r'$A_{\mathrm{CMB}}^Q$',r'$A_{\mathrm{CMB}}^U$',
-          r'$A_{\mathrm{S}}^I$',r'$A_{\mathrm{S}}^Q$',r'$A_{\mathrm{S}}^U$',
-          r'$\beta_d$',r'$T_d$',r'$\beta_S$'])
-labels_decouple = np.asarray([r'$A_{\mathrm{MBB}}^I$',r'$A_{\mathrm{MBB}}^Q$',r'$A_{\mathrm{MBB}}^U$',
-          r'$A_{\mathrm{CMB}}^I$',r'$A_{\mathrm{CMB}}^Q$',r'$A_{\mathrm{CMB}}^U$',
-          r'$A_{\mathrm{S}}^I$',r'$A_{\mathrm{S}}^Q$',r'$A_{\mathrm{S}}^U$',
-          r'$\beta^I_d$',r'$T^I_d$',r'$\beta^I_S$',
-          r'$\beta^Q_d$',r'$T^Q_d$',r'$\beta^Q_S$',
-          r'$\beta^U_d$',r'$T^U_d$',r'$\beta^U_S$'])
-
-
-truths = np.asarray(initial_vals_sMBB)
-indices = [1,2,4,5,7,8,9,10,11]
-
-truths_decouple = np.asarray(initial_vals_sMBB_decouple)
-indices_decouple = [1,2,4,5,7,8,12,13,14,15,16,17]
-
-kwargs = dict({'fontsize':30})
-
-
 ## sMBB data
 
-sMBB_single = single_fit(models_sMBB, models_pMBB_narrow, initial_vals_pMBB_broad)
+sMBB_single = single_fit(models_sMBB, models_pMBB_narrow, initial_vals_sMBB2pMBB, noiseless=True)
 
-np.save('sMBB_single', sMBB_single)
+#pMBB_narrow_single = single_fit(models_pMBB_narrow, models_pMBB_narrow, initial_vals_pMBB_broad)
+#pMBB_intermediate_single = single_fit(models_pMBB_intermediate, models_pMBB_narrow, initial_vals_pMBB_broad)
+#
+np.save('sMBB_single_trueinitial_noiseless', sMBB_single)
+
+#np.save('pMBB_narrow_single', pMBB_narrow_single)
+#np.save('pMBB_intermediate_single', pMBB_intermediate_single
+#np.save('pMBB_broad_single', pMBB_broad_single)
+
 #sMBB_single_decouple = single_fit(sMBB_decouple, models_sMBB,
 #                                    initial_vals_sMBB_decouple, decouple=True)
