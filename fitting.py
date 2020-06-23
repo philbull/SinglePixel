@@ -323,11 +323,14 @@ def joint_mcmc(data_spec, models_fit, param_spec, decouple=False, nwalkers=100,
     ndim = len(initial_vals)
     pos = [initial_vals*(1.+1e-3*np.random.randn(ndim)) for i in range(nwalkers)]
 
+    with Pool() as pool:
+
     #print param_spec
     # Run emcee sampler
-    sampler = emcee.EnsembleSampler( nwalkers, ndim, lnprob_joint,
-                                 args=(data_spec, models_fit, param_spec, decouple))
-    sampler.run_mcmc(pos, burn + steps)
+        sampler = emcee.EnsembleSampler( nwalkers, ndim, lnprob_joint,
+                                     args=(data_spec, models_fit, param_spec, decouple),
+                                     pool=pool)
+        sampler.run_mcmc(pos, burn + steps)
 
     # Recover samples of spectral parameters and amplitudes
     samples = sampler.chain[:, burn:, :].reshape((-1, ndim))
