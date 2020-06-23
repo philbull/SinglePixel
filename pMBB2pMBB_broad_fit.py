@@ -164,8 +164,8 @@ def single_fit(models_data, models_fit, initial_vals, nu=nu_pico, decouple=False
 
     pnames_out, samples, logp  = fitting.joint_mcmc(data_spec,
                                                 models_fit, p_spec,
-                                                nwalkers=48, burn=1000,
-                                                steps=10000, nthreads=1,
+                                                nwalkers=48 * 2, burn=1000,
+                                                steps=10000,
                                                 sample_file=None, decouple=decouple)
 
     return pnames_out, samples, logp
