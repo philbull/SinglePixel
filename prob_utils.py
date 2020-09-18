@@ -60,14 +60,25 @@ def prob_MBB(beta, temp, nu, pdf_beta, pdf_temp, beta_params, temp_params, nu_re
     joint_pdf = pdf_beta(beta, beta_params) * pdf_temp(temp, temp_params)
     return joint_pdf * single_MBB(nu, (beta, temp, 1.0))
 
+def prob_MBB_beta(beta, mean_temp, nu, pdf_beta, beta_params, nu_ref = 353. * 1e9):
+
+    joint_pdf = pdf_beta(beta, beta_params)
+    return joint_pdf * single_MBB(nu, (beta, mean_temp, 1.0))
+
+def prob_MBB_temp(temp, mean_beta, nu, pdf_temp, temp_params, nu_ref = 353. * 1e9):
+
+    joint_pdf = pdf_temp(temp, temp_params)
+    return joint_pdf * single_MBB(nu, (mean_beta, temp, 1.0))
+
 def integrate_I(integrand, nu, beta, temp):
     return [integrate.simps(integrate.simps(integrand(nu[i]), beta), temp) for i in range(len(nu))]
 
 def single_MBB(nu, coeffs):
+    beta, temp, amp = coeffs
     # coeffs[0] is beta, coeffs[1] is temp, coeffs[2] is amplitude
-    model = coeffs[2] * (nu / nu_ref)**coeffs[0] * B_nu(nu, coeffs[1]) \
+    model = amp * (nu / nu_ref)**beta * B_nu(nu, temp) \
                * G_nu(nu_ref, Tcmb) \
-               / ( B_nu(nu_ref, coeffs[1]) * G_nu(nu, Tcmb) )
+               / ( B_nu(nu_ref, temp) * G_nu(nu, Tcmb) )
     return model
 
 def residuals(coeffs, y, t):

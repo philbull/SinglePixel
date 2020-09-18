@@ -26,8 +26,8 @@ def ln_prior(pvals, models):
         'gdust_fI':     (0., 1.),
         'gdust_fQ':     (-2., 2.),
         'gdust_fU':     (-2., 2.),
-        'sigma_beta':   (1e-2, 1.),
-        'sigma_temp':   (.1, 10.),
+        'sigma_beta':   (0.0, 1.),
+        'sigma_temp':   (0.0, 10.),
     }
 
     # Make ordered list of parameter names
@@ -116,6 +116,7 @@ def lnprob_joint(params, data_spec, models_fit, param_spec, decouple=False):
     # Apply prior
     logpr = ln_prior(params, models_fit)
     if not np.isfinite(logpr):
+        # print('tried to go past prior: ', params)
         return -np.inf
 
     # Create new copies of model objects to work with
@@ -275,6 +276,7 @@ def mcmc(data_spec, models_fit, param_spec, decouple=False, nwalkers=50,
     # Define starting points
     ndim = len(initial_vals)
     pos = [initial_vals*(1.+1e-3*np.random.randn(ndim)) for i in range(nwalkers)]
+    print(pos)
 
     # Run emcee sampler
     sampler = emcee.EnsembleSampler( nwalkers, ndim, lnprob,
@@ -322,14 +324,24 @@ def joint_mcmc(data_spec, models_fit, param_spec, decouple=False, nwalkers=100,
     # Define starting points
     ndim = len(initial_vals)
     pos = [initial_vals*(1.+1e-3*np.random.randn(ndim)) for i in range(nwalkers)]
+    np.save('pos', pos)
+    print('pos saved!')
+
+    #filename = "mcmc_check.h5"
+    #backend = emcee.backends.HDFBackend(filename)
+    #print(backend.chain)
+    #print(nwalkers, ndim)
+    #backend.reset(nwalkers, ndim)
+    print('backend initialized!')
 
     with Pool() as pool:
 
     #print param_spec
     # Run emcee sampler
-        sampler = emcee.EnsembleSampler( nwalkers, ndim, lnprob_joint,
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob_joint,
                                      args=(data_spec, models_fit, param_spec, decouple),
                                      pool=pool)
+
         sampler.run_mcmc(pos, burn + steps)
 
     # Recover samples of spectral parameters and amplitudes

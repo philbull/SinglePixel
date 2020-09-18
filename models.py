@@ -1,5 +1,7 @@
 
 import numpy as np
+import pickle
+
 from utils import *
 from prob_utils import *
 from scipy.interpolate import RectBivariateSpline
@@ -481,22 +483,109 @@ class ProbSingleMBB(DustModel):
             sigma_beta = self.sigma_beta
             sigma_temp = self.sigma_temp
 
+        # print('got here!')
+
         nu_ref = self.nu_ref
 
-        n_samples = 500
+        n_samples = 1000
         beta = np.linspace(.1, 5., n_samples)
         temp = np.linspace(1., 50., n_samples)
         BETA, TEMP = np.meshgrid(beta, temp)
 
-        integrand = lambda nu: prob_MBB(BETA, TEMP, nu, gaussian, gaussian, (mean_beta, sigma_beta),
+        integrand = 0
+        I_ref = 0
+
+        dust_I = 0
+        dust_Q = 0
+        dust_U = 0
+
+        # print('got here 2!')
+
+        # print('standard case', sigma_beta >= 1e-1 and sigma_temp >= 1e-1)
+        # print('interpolated case', sigma_beta <= 1e-1 and sigma_temp <= 1e-1)
+        # print('zero sigma beta case', sigma_beta == 0.0 and sigma_temp >= 1e-1)
+        # print('zero sigma temp', sigma_beta >= 1e-1 and sigma_temp == 0.0)
+
+        if sigma_beta >= 1e-1 and sigma_temp >= 1e-1:
+            #print('normal case!')
+
+            integrand = lambda nu: prob_MBB(BETA, TEMP, nu, gaussian, gaussian, (mean_beta, sigma_beta),
                                     (mean_T, sigma_temp))
 
-        I_ref = integrate.simps(integrate.simps(integrand(nu_ref), beta), temp)
+            I_ref = integrate.simps(integrate.simps(integrand(nu_ref), beta), temp)
 
             # Frequency-dependent scalings.
-        dust_I = [integrate.simps(integrate.simps(integrand(nu), beta), temp) / I_ref for nu in nu]
-        dust_Q = dust_I
-        dust_U = dust_I
+            dust_I = [integrate.simps(integrate.simps(integrand(nu), beta), temp) / I_ref for nu in nu]
+            dust_Q = dust_I
+            dust_U = dust_I
+
+
+        elif sigma_beta == 0.0 and sigma_temp >= 1e-1:
+            # print('delta function in sigma_beta')
+
+            integrand = lambda nu: prob_MBB_temp(temp, mean_beta, nu,
+                                    gaussian, [mean_T, sigma_temp], nu_ref = 353. * 1e9)
+
+            I_ref = integrate.simps(integrand(nu_ref), temp)
+
+            # Frequency-dependent scalings.
+            dust_I = [integrate.simps(integrand(nu), temp) / I_ref for nu in nu]
+            dust_Q = dust_I
+            dust_U = dust_I
+
+        elif sigma_beta >= 1e-1 and sigma_temp == 0.0:
+
+            integrand = lambda nu: prob_MBB_beta(beta, mean_temp, nu,
+                                    gaussian, [mean_beta, sigma_beta], nu_ref = 353. * 1e9)
+
+            I_ref = integrate.simps(integrand(nu_ref), beta)
+            # Frequency-dependent scalings.
+            dust_I = [integrate.simps(integrand(nu), beta) / I_ref for nu in nu]
+            dust_Q = dust_I
+            dust_U = dust_I
+
+        elif sigma_beta == 0.0 and sigma_temp == 0.0:
+            # print('delta function limit sMBB')
+
+            # Frequency-dependent scalings.
+            dust_I = (nu / nu_ref)**mean_beta * B_nu(nu, mean_T) \
+                           * G_nu(nu_ref, Tcmb) \
+                           / ( B_nu(353.*1e9, mean_T) * G_nu(nu, Tcmb) )
+            dust_Q = dust_I
+            dust_U = dust_I
+
+        elif sigma_beta <= 1e-1 or sigma_temp <= 1e-1:
+            print('here')
+            linear = False
+
+            if linear == True:
+
+                sMBB_Q = np.load('sMBB_Q.npy')
+                pMBB_Q = np.load('pMBB_Q.npy')
+
+
+                linear_interpolate = 1.0137064288336763
+                delta_linear = linear_interpolate * (sigma_beta / .2 + sigma_temp / 4.0)
+                print(delta_linear)#inter_linear =
+
+                dust_I = (1 - delta_linear) * sMBB_Q + delta_linear * pMBB_Q
+
+            if linear == False:
+
+                filename = 'interpolated_scalings'
+                # print(filename)
+
+                infile = open(filename,'rb')
+                inter_funcs = pickle.load(infile)
+                infile.close()
+
+                dust_I = np.zeros_like(nu)
+
+                for i, n in enumerate(nu):
+                    dust_I[i] = inter_funcs[i](sigma_beta, sigma_temp)
+
+            dust_Q = dust_I
+            dust_U = dust_I
 
         return np.array([dust_I, dust_Q, dust_U])
 
@@ -575,6 +664,7 @@ class TMFM(DustModel):
         dust_U = dust_U
 
         return np.array([dust_I, dust_Q, dust_U])
+
 
 
 class sMBB_TMFM(DustModel):
