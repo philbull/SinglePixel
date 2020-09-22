@@ -483,8 +483,6 @@ class ProbSingleMBB(DustModel):
             sigma_beta = self.sigma_beta
             sigma_temp = self.sigma_temp
 
-        # print('got here!')
-
         nu_ref = self.nu_ref
 
         n_samples = 1000
@@ -498,8 +496,6 @@ class ProbSingleMBB(DustModel):
         dust_I = 0
         dust_Q = 0
         dust_U = 0
-
-        # print('got here 2!')
 
         # print('standard case', sigma_beta >= 1e-1 and sigma_temp >= 1e-1)
         # print('interpolated case', sigma_beta <= 1e-1 and sigma_temp <= 1e-1)
@@ -555,25 +551,19 @@ class ProbSingleMBB(DustModel):
             dust_U = dust_I
 
         elif sigma_beta <= 1e-1 or sigma_temp <= 1e-1:
-            print('here')
-            linear = False
+            linear = True
 
             if linear == True:
-
                 sMBB_Q = np.load('sMBB_Q.npy')
                 pMBB_Q = np.load('pMBB_Q.npy')
 
-
-                linear_interpolate = 1.0137064288336763
+                linear_interpolate = 1 #1.0137064288336763
                 delta_linear = linear_interpolate * (sigma_beta / .2 + sigma_temp / 4.0)
-                print(delta_linear)#inter_linear =
 
                 dust_I = (1 - delta_linear) * sMBB_Q + delta_linear * pMBB_Q
 
             if linear == False:
-
                 filename = 'interpolated_scalings'
-                # print(filename)
 
                 infile = open(filename,'rb')
                 inter_funcs = pickle.load(infile)
