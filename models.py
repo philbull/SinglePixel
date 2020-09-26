@@ -551,9 +551,9 @@ class ProbSingleMBB(DustModel):
             dust_U = dust_I
 
         elif sigma_beta <= 1e-1 or sigma_temp <= 1e-1:
-            linear = True
+            type = 'restricted_range'
 
-            if linear == True:
+            if type == 'linear':
                 sMBB_Q = np.load('sMBB_Q.npy')
                 pMBB_Q = np.load('pMBB_Q.npy')
 
@@ -562,7 +562,7 @@ class ProbSingleMBB(DustModel):
 
                 dust_I = (1 - delta_linear) * sMBB_Q + delta_linear * pMBB_Q
 
-            if linear == False:
+            if type == 'interpolated':
                 filename = 'interpolated_scalings'
 
                 infile = open(filename,'rb')
@@ -573,6 +573,23 @@ class ProbSingleMBB(DustModel):
 
                 for i, n in enumerate(nu):
                     dust_I[i] = inter_funcs[i](sigma_beta, sigma_temp)
+
+            if type == 'restricted_range':
+                print('using restricted range')
+
+                beta = np.linspace(mean_beta-5*sigma_beta,
+                mean_beta+5*sigma_beta, n_samples)
+                temp = np.linspace(mean_T-5*sigma_temp, mean_T+5*sigma_temp,
+                n_samples)
+                BETA, TEMP = np.meshgrid(beta, temp)
+
+                integrand = lambda nu: prob_MBB(BETA, TEMP, nu, gaussian, gaussian, (mean_beta, sigma_beta),
+                                        (mean_T, sigma_temp))
+
+                I_ref = integrate.simps(integrate.simps(integrand(nu_ref), beta), temp)
+
+                # Frequency-dependent scalings.
+                dust_I = [integrate.simps(integrate.simps(integrand(nu), beta), temp) / I_ref for nu in nu]
 
             dust_Q = dust_I
             dust_U = dust_I

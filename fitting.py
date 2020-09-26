@@ -324,15 +324,15 @@ def joint_mcmc(data_spec, models_fit, param_spec, decouple=False, nwalkers=100,
     # Define starting points
     ndim = len(initial_vals)
     pos = [initial_vals*(1.+1e-3*np.random.randn(ndim)) for i in range(nwalkers)]
-    np.save('pos', pos)
-    print('pos saved!')
+    #np.save('pos', pos)
+    #print('pos saved!')
 
     #filename = "mcmc_check.h5"
     #backend = emcee.backends.HDFBackend(filename)
     #print(backend.chain)
     #print(nwalkers, ndim)
     #backend.reset(nwalkers, ndim)
-    print('backend initialized!')
+    #print('backend initialized!')
 
     with Pool() as pool:
 
