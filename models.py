@@ -497,6 +497,8 @@ class ProbSingleMBB(DustModel):
         dust_Q = 0
         dust_U = 0
 
+        # print(sigma_beta, sigma_temp)
+
         # print('standard case', sigma_beta >= 1e-1 and sigma_temp >= 1e-1)
         # print('interpolated case', sigma_beta <= 1e-1 and sigma_temp <= 1e-1)
         # print('zero sigma beta case', sigma_beta == 0.0 and sigma_temp >= 1e-1)
@@ -575,12 +577,23 @@ class ProbSingleMBB(DustModel):
                     dust_I[i] = inter_funcs[i](sigma_beta, sigma_temp)
 
             if type == 'restricted_range':
-                print('using restricted range')
 
-                beta = np.linspace(mean_beta-5*sigma_beta,
-                mean_beta+5*sigma_beta, n_samples)
-                temp = np.linspace(mean_T-5*sigma_temp, mean_T+5*sigma_temp,
-                n_samples)
+                if sigma_beta <= 1e-1:
+                    print('using restricted range for sigma beta = ', sigma_beta)
+                    beta = np.linspace(mean_beta-5*sigma_beta, mean_beta+5*sigma_beta,
+                                                                n_samples)
+
+                elif sigma_beta < 1e-1:
+                    beta = np.linspace(.1, 5., n_samples)
+
+                if sigma_temp <= 1e-1:
+                    print('using restricted range for sigma temp = ', sigma_temp)
+                    temp = np.linspace(mean_T-5*sigma_temp, mean_T+5*sigma_temp,
+                                                                n_samples)
+
+                elif sigma_temp > 1e-1:
+                    temp = np.linspace(1., 50., n_samples)
+
                 BETA, TEMP = np.meshgrid(beta, temp)
 
                 integrand = lambda nu: prob_MBB(BETA, TEMP, nu, gaussian, gaussian, (mean_beta, sigma_beta),

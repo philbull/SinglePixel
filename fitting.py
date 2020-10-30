@@ -116,7 +116,7 @@ def lnprob_joint(params, data_spec, models_fit, param_spec, decouple=False):
     # Apply prior
     logpr = ln_prior(params, models_fit)
     if not np.isfinite(logpr):
-        # print('tried to go past prior: ', params)
+        print('prior returned infinite')
         return -np.inf
 
     # Create new copies of model objects to work with
@@ -152,6 +152,8 @@ def lnprob_joint(params, data_spec, models_fit, param_spec, decouple=False):
         # Calculate chi-squared with data (assumed beam = 1)
         mdata = np.matrix(mdata).T
         chi_square = (D_vec - mdata).T * Ninv * (D_vec - mdata)
+
+        #print('value of log p is: ', -0.5 * chi_square)
 
         # Return log-posterior
         #return logpr - 0.5 * chi_square
@@ -300,8 +302,8 @@ def mcmc(data_spec, models_fit, param_spec, decouple=False, nwalkers=50,
     return params_out, pnames, samples
 
 
-def joint_mcmc(data_spec, models_fit, param_spec, decouple=False, nwalkers=100,
-               burn=500, steps=1000, nthreads=2, sample_file=None):
+def joint_mcmc(data_spec, models_fit, param_spec, decouple=False, nwalkers=20,
+               burn=100, steps=1000, nthreads=2, sample_file=None):
     """
     Run MCMC to fit model to some simulated data. Fits to all parameters, both
     amplitudes and spectral parameters.
