@@ -325,26 +325,26 @@ def joint_mcmc(data_spec, models_fit, param_spec, decouple=False, nwalkers=20,
 
     # Define starting points
     ndim = len(initial_vals)
-    pos = [initial_vals*(1.+1e-3*np.random.randn(ndim)) for i in range(nwalkers)]
-    #np.save('pos', pos)
-    #print('pos saved!')
+    pos = [initial_vals*(1. + .5 * np.random.randn(ndim)) for i in range(nwalkers)]
+    np.save('pos', pos)
+    print('pos saved!')
 
-    #filename = "mcmc_check.h5"
-    #backend = emcee.backends.HDFBackend(filename)
+    filename = "mcmc_check.h5"
+    backend = emcee.backends.HDFBackend(filename)
     #print(backend.chain)
-    #print(nwalkers, ndim)
-    #backend.reset(nwalkers, ndim)
-    #print('backend initialized!')
+    print(nwalkers, ndim)
+    backend.reset(nwalkers, ndim)
+    print('backend initialized!')
 
-    with Pool() as pool:
+    #with Pool() as pool:
 
     #print param_spec
     # Run emcee sampler
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob_joint,
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob_joint,
                                      args=(data_spec, models_fit, param_spec, decouple),
-                                     pool=pool)
+                                     backend=backend)
 
-        sampler.run_mcmc(pos, burn + steps)
+    sampler.run_mcmc(pos, burn + steps)
 
     # Recover samples of spectral parameters and amplitudes
     samples = sampler.chain[:, burn:, :].reshape((-1, ndim))
